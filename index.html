@@ -3118,6 +3118,7 @@ function merge(inc){
   }
   if(inc.by===inc.host) hostSeen=Date.now();
   S=inc; syncRole(); saveLocal(); route();
+  try{ tentaResolver(); }catch(e){}
 }
 function commit(mut,soft){
   mut(S);
@@ -3191,6 +3192,12 @@ function remaining(){
   if(S.paused) return Math.max(0,S.left||0);
   if(!S.clock) return TURN_SEC;
   return Math.max(0,TURN_SEC-Math.floor((Date.now()-S.clock)/1000));
+}
+/* Quantos segundos o tempo já estourou. Vem de carimbo de tempo, então um
+   aparelho que estava com a tela apagada acorda sabendo o atraso real. */
+function estouradoHa(){
+  if(S.paused||!S.clock) return 0;
+  return Math.max(0, Math.floor((Date.now()-S.clock)/1000) - TURN_SEC);
 }
 
 /* ================= TELAS ================= */
@@ -3600,7 +3607,6 @@ function autoResolve(){
     p = av[Math.floor(Math.random()*av.length)];
   }
   lastAdded=p;
-  zeroSince=0;
   commit(st=>{ st.picks.push(hadProv?{p,t,s:sl}:{p,t,s:sl,auto:1}); st.prov=null; st.clock=Date.now(); });
   setTimeout(()=>{autoLock=false;},1800);
 }
@@ -4099,20 +4105,30 @@ function tickClock(){
     return;
   }
   el.textContent = r===0 ? 'TEMPO!' : Math.floor(r/60)+':'+String(r%60).padStart(2,'0');
+  el.title = r===0 ? 'Tempo esgotado há '+estouradoHa()+'s — resolvendo…' : '';
   el.classList.toggle('warn',r<=10);
   fill.style.width=(r/TURN_SEC*100)+'%';
   fill.classList.toggle('warn',r<=10);
 }
-let zeroSince=0;
+/* O navegador congela os temporizadores de abas em segundo plano — se só o
+   organizador resolvesse o estouro, o draft travaria com o celular dele no bolso.
+   Então quem estiver com o app aberto resolve, em camadas, do mais legítimo
+   para o último recurso. A carência mínima deixa a pick provisória de quem
+   escolheu no último segundo chegar antes de qualquer sorteio. */
+function tentaResolver(){
+  if(S.phase!=='draft'||!ME.room||S.paused) return;
+  const t=onClock(); if(t===null) return;
+  const atraso=estouradoHa();
+  if(atraso<3) return;
+  const souDaVez = ME.cap===t;
+  const souHost  = ME.role==='host';
+  const souCap   = ME.cap>=0;
+  if( (souDaVez && atraso>=3) || (souHost && atraso>=6) || (souCap && atraso>=12) ) autoResolve();
+}
 setInterval(()=>{
-  if(S.phase!=='draft'||!ME.room){ zeroSince=0; return; }
+  if(S.phase!=='draft'||!ME.room) return;
   tickClock();
-  if(onClock()===null){ zeroSince=0; return; }
-  if(remaining()===0){
-    if(!zeroSince) zeroSince=Date.now();
-    // carencia: da tempo da pick provisoria de quem escolheu no ultimo segundo chegar
-    if(ME.role==='host' && Date.now()-zeroSince>2000) autoResolve();
-  } else zeroSince=0;
+  tentaResolver();
 },400);
 
 const search=document.getElementById('search');
@@ -4171,7 +4187,7 @@ function toggleExport(){
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible'&&ME.room){
       if(!ws||ws.readyState>1) openWS();
-      pullState().then(st=>{ if(st) merge(st); });
+      pullState().then(st=>{ if(st) merge(st); try{ tickClock(); tentaResolver(); }catch(e){} });
     }
   });
   window.addEventListener('online',()=>{ if(ME.room) openWS(); });
