@@ -461,6 +461,10 @@
   .chatrow{display:flex;gap:7px}
   .chatrow input{flex:1;min-width:0}
   .ftr{text-align:center;margin-top:26px;font-family:'Anton',sans-serif;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .card.secund{opacity:.9}
+  .card.secund h2.ttl{font-size:.9rem}
+  .code.sm2{font-size:1.4rem;letter-spacing:.16em;padding:12px 10px;flex:1 1 130px;min-width:0}
+  .row.wrapok{flex-wrap:wrap;gap:10px}
   .divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-soft)}
   .divider::before,.divider::after{content:'';flex:1;height:2px;background:currentColor;opacity:.3}
   .divider span{font-family:'Anton',sans-serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase}
@@ -490,21 +494,22 @@
   <!-- ============ LOBBY ============ -->
   <section id="vLobby" class="hidden">
     <div class="card">
-      <h2 class="ttl">Entrar numa sala</h2>
-      <p class="hint">Código de 5 letras que o organizador mandou no grupo.</p>
-      <input id="joinCode" class="code" type="text" inputmode="latin" maxlength="5" placeholder="ABCDE" autocomplete="off">
-      <p class="hint" style="margin-top:16px">Senha — <b>só os 4 capitães têm</b>. Deixe em branco pra entrar como torcida e assistir.</p>
-      <input id="joinPw" class="code" type="text" inputmode="numeric" maxlength="12" placeholder="· · · ·" autocomplete="off">
-      <div class="row" style="margin-top:14px">
-        <button class="go block" onclick="doJoin()">Entrar ⚽</button>
-      </div>
-      <div class="err hidden" id="joinErr"></div>
+      <h2 class="ttl">Vou organizar o draft</h2>
+      <p class="hint">Monta as listas e comanda o draft. Depois manda o link no grupo — quem clicar já cai dentro da sala, sem digitar nada.</p>
+      <button class="go block" onclick="doCreate()">🎩 Criar sala nova</button>
     </div>
     <div class="divider"><span>ou</span></div>
-    <div class="card">
-      <h2 class="ttl">Sou o organizador</h2>
-      <p class="hint">Cria a sala, monta as listas e comanda o draft do começo ao fim.</p>
-      <button class="block" onclick="doCreate()">🎩 Criar sala nova</button>
+    <div class="card secund">
+      <h2 class="ttl">Recebeu só o código?</h2>
+      <p class="hint">Se o link do organizador não abriu direto, digita as 5 letras aqui. Capitão põe a senha; em branco entra como torcida.</p>
+      <div class="row wrapok">
+        <input id="joinCode" class="code sm2" type="text" inputmode="latin" maxlength="5" placeholder="ABCDE" autocomplete="off">
+        <input id="joinPw" class="code sm2" type="text" inputmode="numeric" maxlength="12" placeholder="senha" autocomplete="off">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="block" id="joinBtn" onclick="doJoin()">Entrar ⚽</button>
+      </div>
+      <div class="err hidden" id="joinErr"></div>
     </div>
   </section>
 
@@ -3187,7 +3192,10 @@ let ws=null, wsTimer=null, connState='wait', pushQueue=false, pushTimer=null;
 function topic(){ return 'slg-draft-'+ME.room.toLowerCase(); }
 function setConn(st,txt){
   connState=st;
-  document.getElementById('conn').className='conn '+st;
+  const el=document.getElementById('conn');
+  el.className='conn '+st;
+  /* na tela de entrada nao ha sala nenhuma: a pastilha so cobriria o campo do codigo */
+  el.style.display = ME.room ? '' : 'none';
   document.getElementById('connTxt').innerHTML = txt + (ME.room?` · <span class="room">${ME.room}</span>`:'');
 }
 /* Ordem total do estado: versão, depois carimbo, depois id do aparelho.
@@ -3594,7 +3602,7 @@ async function doJoin(){
   if(!st){ err.textContent='Não achei essa sala. Confira o código com o organizador.'; err.classList.remove('hidden'); setConn('off','sem sala'); return; }
   S=st;
   if(pw){
-    const btn=document.querySelector('#vLobby button.go');
+    const btn=document.getElementById('joinBtn');
     if(btn){ btn.disabled=true; btn.textContent='Conferindo…'; }
     const ok=await senhaConfere(code,pw,S.pwh);
     if(btn){ btn.disabled=false; btn.textContent='Entrar ⚽'; }
