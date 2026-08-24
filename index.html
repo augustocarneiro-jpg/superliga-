@@ -335,6 +335,17 @@
   .resStats div{font-size:.82rem;font-weight:700}
   .resStats b{font-family:'Anton',sans-serif;font-size:.95rem}
 
+  .sorteioBox{
+    background:var(--ink);color:var(--cream);border-radius:8px;padding:9px 12px;margin-bottom:12px;
+    font-size:.84rem;font-weight:700;line-height:1.4
+  }
+  .sorteioBox .rot{
+    font-family:'Anton',sans-serif;font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--gold-2);display:block;margin-bottom:2px
+  }
+  .sorteioBox .aviso{
+    display:block;margin-top:5px;font-size:.74rem;font-weight:600;color:#FFB4B0
+  }
   /* sequencia das escolhas */
   #histCard{margin-top:18px}
   .hist{display:flex;flex-direction:column;gap:5px;max-height:340px;overflow-y:auto}
@@ -526,12 +537,11 @@
   <section id="vSetup" class="hidden">
     <div class="grid2">
       <div class="card">
-        <h2 class="ttl">① Capitães &amp; ordem</h2>
-        <p class="hint">Um por linha, 4 no total. Esta é a ordem de escolha da 1ª rodada.</p>
+        <h2 class="ttl">① Os 4 capitães</h2>
+        <p class="hint">Um por linha. A <b>ordem de escolha é sorteada</b> quando você apertar Iniciar — a ordem que você digita aqui não conta.</p>
         <textarea id="capsIn" rows="5" placeholder="tucho&#10;davizin&#10;vilas&#10;bijos"></textarea>
         <div class="row between" style="margin-top:10px">
           <span class="count" id="capsCount">0 capitães</span>
-          <button class="sm" onclick="shuffleBox('capsIn')">🎲 Sortear ordem</button>
         </div>
       </div>
       <div class="card">
@@ -564,6 +574,7 @@
     <div class="card">
       <h2 class="ttl">④ Senha dos capitães</h2>
       <p class="hint">O código da sala pode ir no grupo da pelada — quem entrar sem senha só <b>assiste</b>. A senha manda só pros 4 capitães, no privado.</p>
+      <p class="hint" style="margin-bottom:0">📶 Cada um na sua casa, cada um na sua rede — é assim que funciona melhor. Só evite <b>todos no mesmo wi-fi</b>: o serviço gratuito conta mensagens por rede, e aí vocês dividiriam um limite só.</p>
       <div class="row">
         <input id="pwIn" class="code" type="text" inputmode="numeric" maxlength="12" style="max-width:220px" autocomplete="off">
         <button class="sm" onclick="regenPw()">🎲 Outra</button>
@@ -667,6 +678,11 @@
       <div class="row" id="voltaRow"></div>
     </div>
 
+    <div class="done hidden" id="redeBox" style="background:var(--red);color:#fff;text-align:left">
+      <h2>📵 Suas ações não estão chegando na sala</h2>
+      <p id="redeMsg"></p>
+    </div>
+
     <div class="done hidden" id="pausedBox" style="background:var(--red);color:#fff">
       <h2>⏸ Draft pausado</h2>
       <p id="pausedMsg">O organizador está ajustando alguma coisa. O cronômetro está congelado.</p>
@@ -733,6 +749,7 @@
   </section>
 
   <div class="card hidden" id="histCard">
+    <div id="sorteioLinha" class="sorteioBox hidden"></div>
     <div class="row between">
       <h2 class="ttl"><span class="soDesktop">📜 Sequência das escolhas</span><span class="soCelular">📜 Sequência</span></h2>
       <button class="sm plain" onclick="copyHist()" id="copyHistBtn">📋 <span class="soDesktop">Copiar sequência</span><span class="soCelular">Copiar</span></button>
@@ -3125,7 +3142,7 @@ const TURN_SEC = 60;
 function blank(){
   return { v:0, ts:0, by:'', host:'', pwh:'', phase:'setup', chat:1,
            caps:[], players:[], picks:[], order:[], extra:[], dead:[],
-           prov:null, clock:0, paused:0, left:0 };
+           sorteio:[], nSorteios:0, prov:null, clock:0, paused:0, left:0 };
 }
 let S = blank();
 const ME = { id:'', room:'', role:'view', cap:-1 };
@@ -3247,17 +3264,22 @@ function retry(){ clearTimeout(wsTimer); wsTimer=setTimeout(openWS,4000); }
 
 /* --- presença do organizador --- */
 let hostSeen=Date.now();
-const HOST_TIMEOUT=100000;   // batimento de 20s: 100s evita alarme falso com a aba em segundo plano
+/* O batimento gastava 3 mensagens por minuto SEM PARAR, o que estourava a cota
+   diaria do servico gratuito em poucas horas de sala aberta. Agora ele só bate
+   durante o draft, com a tela acesa, a cada 45s. */
+const HOST_TIMEOUT=150000;
 function hostGone(){
   return !!S.host && S.host!==ME.id && (Date.now()-hostSeen)>HOST_TIMEOUT;
 }
 setInterval(()=>{
-  if(!ME.room) return;
-  if(ME.role==='host'){
-    hostSeen=Date.now();
-    fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:ME.id}).catch(()=>{});
-  }
-},20000);
+  if(!ME.room || ME.role!=='host') return;
+  hostSeen=Date.now();
+  if(S.phase!=='draft') return;                       // na sala de espera nao precisa
+  if(onClock()===null) return;                        // draft acabou
+  if(document.visibilityState!=='visible') return;    // tela apagada nao precisa avisar nada
+  contaMsg();
+  fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:ME.id}).catch(()=>{});
+},45000);
 
 /* O ntfy corta em 4096 bytes — acima disso ele transforma a mensagem em anexo,
    devolve 200 e o assinante recebe um texto que não é JSON. Ou seja: quebraria
@@ -3267,6 +3289,38 @@ function bytesDe(txt){ try{ return new TextEncoder().encode(txt).length; }catch(
 
 let pushPend=false, reenvioTimer=null, pushando=false;
 let chatCedeAte=0;
+let msgsEnviadas=0;        // nesta sessao
+let cotaEstourada=false;   // 429 de cota diaria: nao e coisa de segundos
+let avisouCota=0;
+
+/* O servico gratuito tem cota DIARIA por rede. Contamos o que este aparelho
+   mandou hoje pra avisar antes de travar no meio do draft — foi assim que a
+   primeira pelada de teste morreu. O limite real e por rede, entao se todos
+   estiverem no mesmo wi-fi a soma e maior do que este numero. */
+const LIMITE_AVISO=190, LIMITE_PERIGO=235;
+function hojeStr(){ const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function contaMsg(){
+  msgsEnviadas++;
+  let n=0;
+  try{
+    const k='slg_cota_'+hojeStr();
+    n=parseInt(localStorage.getItem(k)||'0',10)+1;
+    localStorage.setItem(k,String(n));
+    // limpa contadores de dias passados
+    for(let i=localStorage.length-1;i>=0;i--){
+      const kk=localStorage.key(i);
+      if(kk&&kk.startsWith('slg_cota_')&&kk!==k) localStorage.removeItem(kk);
+    }
+  }catch(e){ return; }
+  if(n>=LIMITE_PERIGO && avisouCota<2){ avisouCota=2;
+    flash(`⚠️ ${n} mensagens hoje nesta rede — o limite gratuito está no fim. Se travar, use o 4G do celular.`); }
+  else if(n>=LIMITE_AVISO && avisouCota<1){ avisouCota=1;
+    flash(`📊 ${n} mensagens hoje nesta rede (limite ~250). Um draft gasta ~15, então isso vem de sala aberta há muito tempo.`); }
+}
+function msgsHoje(){
+  try{ return parseInt(localStorage.getItem('slg_cota_'+hojeStr())||'0',10); }catch(e){ return 0; }
+}
 function chatCedeAVez(){ chatCedeAte=Date.now()+8000; try{ renderChat(); }catch(e){} }
 
 async function pushNow(){
@@ -3284,17 +3338,27 @@ async function pushNow(){
     const esperas=[900,3000,6000];
     for(let i=0;i<3;i++){
       try{
+        contaMsg();
         const r=await fetch(`https://${NTFY}/${topic()}`,{method:'POST',headers:{'Cache-Control':'no-cache'},body});
-        if(r.status===429){ chatCedeAVez(); await new Promise(x=>setTimeout(x,esperas[i])); continue; }
+        if(r.status===429){
+          chatCedeAVez();
+          try{ const j=await r.clone().json(); if(j && j.code===42908) cotaEstourada=true; }catch(e){}
+          await new Promise(x=>setTimeout(x,esperas[i])); continue;
+        }
         if(!r.ok) throw new Error(r.status);
-        pushPend=false;
+        const eraPendente=pushPend;
+        pushPend=false; cotaEstourada=false;
         if(connState!=='on') setConn('on','ao vivo');
+        // rede voltou com o tempo ja estourado: devolve o minuto em vez de sortear
+        if(eraPendente && ME.role==='host' && S.phase==='draft' && onClock()!==null && estouradoHa()>0){
+          setTimeout(()=>{ commit(st=>{ st.clock=Date.now(); }); flash('📶 Rede voltou — cronômetro reiniciado nesta vez.'); },50);
+        }
         return;
       }catch(e){ await new Promise(x=>setTimeout(x,esperas[i])); }
     }
     // não desiste: fica reenviando até passar, senão a pick fica presa neste celular
     pushPend=true;
-    setConn('off','não enviou ainda — tentando de novo');
+    setConn('off', cotaEstourada ? 'limite diário do serviço estourou' : 'não enviou ainda — tentando de novo');
   } finally {
     pushando=false;
     if(pushPend) agendaReenvio();
@@ -3348,7 +3412,12 @@ function merge(inc){
     flash(`🎩 ${novo?novo.n:'Alguém'} assumiu o comando da sala${assumiu&&antigo?` (${antigo.n} caiu)`:''}.`);
   }
   if(inc.by===inc.host) hostSeen=Date.now();
+  const comecou = S.phase!=='draft' && inc.phase==='draft';
+  const sorteioNovo = (inc.nSorteios||0) > (S.nSorteios||0);
   S=inc; syncRole(); saveLocal(); route();
+  if(comecou||sorteioNovo){
+    try{ flash('🎲 Ordem sorteada: '+textoOrdem()); }catch(e){}
+  }
   try{ tentaResolver(); }catch(e){}
 }
 function commit(mut,soft){
@@ -3400,6 +3469,20 @@ function bytesEstadoFinal(caps,pls){
     players:pls, order:snakeOrder(4,pls.length), extra:[], dead:[], prov:null,
     picks:pls.map((n,i)=>({p:n,t:i%4,s:i})), phase:'draft', clock:Date.now(), v:999, ts:Date.now(), by:'xxxxxxxx'};
   return bytesDe(JSON.stringify(falso));
+}
+/* A ordem de escolha e sorteada no instante em que o organizador aperta
+   "Iniciar o draft" — nao vem de como ele digitou os nomes. Todos os
+   aparelhos recebem o resultado ao mesmo tempo, e o app mostra quantas
+   vezes o sorteio foi refeito, pra ninguem poder rodar de novo escondido. */
+function sorteiaOrdem(n){
+  const a=Array.from({length:n},(_,i)=>i);
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function textoOrdem(){
+  const perm=S.sorteio||[];
+  if(!perm.length) return '';
+  return perm.map(i=>(S.caps[i]||{n:'?'}).n).join(' → ');
 }
 function snakeOrder(n,total){
   const out=[];
@@ -3649,8 +3732,7 @@ function renderSetup(){
     const hex=normHex(c.k), mine=c.by===ME.id;
     const d=document.createElement('div');
     d.className='cap-row'+(mine?' me':'');
-    d.innerHTML=`<span class="pos">${i+1}º</span>`+
-      `<span class="swatch" style="background:${esc(hex)}"></span>`+
+    d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
       `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
       `<span class="sp"></span>`;
     d.querySelector('.nm').textContent=c.n;
@@ -3708,7 +3790,7 @@ function renderSetup(){
   let msg;
   if(nCaps!==4||nPls<4) msg='Precisa de exatamente 4 capitães e no mínimo 4 jogadores.';
   else if(!allReady()) msg=`${nPls} jogadores · ${rounds} rodada${rounds>1?'s':''} de serpente. Faltam ${4-nReady} capitão(ões) marcarem Pronto.`;
-  else msg=`Tudo pronto: ${nPls} jogadores · ${rounds} rodada${rounds>1?'s':''} · times de ${1+base}${rest?' a '+(2+base):''} (capitão incluído).`;
+  else msg=`Tudo pronto: ${nPls} jogadores · ${rounds} rodada${rounds>1?'s':''} · times de ${1+base}${rest?' a '+(2+base):''}. 🎲 A ordem de escolha é sorteada agora, ao apertar Iniciar.`;
   document.getElementById('setupSummary').textContent=msg;
 }
 function hostClaim(i){
@@ -3745,11 +3827,17 @@ function startDraft(){
   if(tam>=LIMITE_ESTADO) return barra('Os nomes somam '+tam+' bytes e o transporte corta em 4096 — o draft pararia de sincronizar no meio. Encurte pra apelidos.');
   if(!allReady()) return barra('Espere os 4 capitães marcarem Pronto.');
   err.classList.add('hidden');
+  const perm=sorteiaOrdem(4);
   commit(st=>{
     st.players=pls; st.picks=[]; st.prov=null;
-    st.order=snakeOrder(4,pls.length); st.extra=[]; st.dead=[];
+    st.sorteio=perm;
+    st.nSorteios=(st.nSorteios||0)+1;
+    // a serpente e montada sobre a ordem sorteada, nao sobre a ordem digitada
+    st.order=snakeOrder(4,pls.length).map(i=>perm[i]);
+    st.extra=[]; st.dead=[];
     st.phase='draft'; st.clock=Date.now(); st.paused=0; st.left=0;
   });
+  flash('🎲 Ordem sorteada: '+textoOrdem());
 }
 function copyLink(){ copyTxt(location.origin+location.pathname+'?sala='+ME.room,'copyLinkBtn','📋 Copiar link'); }
 function shareLink(){
@@ -3790,8 +3878,7 @@ function renderLounge(){
     caps.forEach((c,i)=>{
       const hex=normHex(c.k);
       const d=document.createElement('div'); d.className='cap-row';
-      d.innerHTML=`<span class="pos">${i+1}º</span>`+
-        `<span class="swatch" style="background:${esc(hex)}"></span>`+
+      d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
         `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
         `<span class="sp"></span>`;
       d.querySelector('.nm').textContent=c.n;
@@ -3826,8 +3913,7 @@ function renderLounge(){
     const hex=normHex(c.k), mine=c.by===ME.id, boss=(c.by&&c.by===S.host);
     const d=document.createElement('div');
     d.className='cap-row'+(mine?' me':'')+((c.by&&!mine)?' dim':'');
-    d.innerHTML=`<span class="pos">${i+1}º</span>`+
-      `<span class="swatch" style="background:${esc(hex)}"></span>`+
+    d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
       `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
       `<span class="sp"></span>`;
     d.querySelector('.nm').textContent=c.n;
@@ -4005,7 +4091,7 @@ async function sendChat(){
     err.textContent='Já foram 10 no último minuto. Deixa os outros falarem.'; err.classList.remove('hidden'); return;
   }
   err.classList.add('hidden');
-  chatSent.push(agora); msgEl.value='';
+  chatSent.push(agora); msgEl.value=''; contaMsg();
   const pacote={k:ME.id.slice(0,4)+'-'+agora, id:ME.id, n:nome, m:txt, t:agora,
                 c:(ME.cap>=0?1:0), h:(ME.role==='host'?1:0)};
   addChat(pacote);   // aparece na hora pra quem mandou; o eco do servidor e ignorado pela chave
@@ -4104,6 +4190,19 @@ function renderHist(){
   const visivel = !!ME.room && S.phase==='draft';
   card.classList.toggle('hidden',!visivel);
   if(!visivel) return;
+
+  const sl=document.getElementById('sorteioLinha');
+  const temSorteio=(S.sorteio||[]).length>0;
+  sl.classList.toggle('hidden',!temSorteio);
+  if(temSorteio){
+    sl.innerHTML='<span class="rot">🎲 ordem sorteada no início</span>';
+    sl.append(document.createTextNode(textoOrdem()));
+    if((S.nSorteios||0)>1){
+      const av=document.createElement('span'); av.className='aviso';
+      av.textContent='⚠️ este é o sorteio nº '+S.nSorteios+' desta sala — o draft foi reiniciado.';
+      sl.appendChild(av);
+    }
+  }
   const log=document.getElementById('histLog');
   log.innerHTML='';
   if(!S.picks.length){ log.innerHTML='<div class="vazio">nenhuma escolha ainda</div>'; return; }
@@ -4128,8 +4227,9 @@ function renderHist(){
   });
 }
 function histText(){
-  if(!S.picks.length) return 'Nenhuma escolha ainda.';
-  let s='📜 SEQUÊNCIA DAS ESCOLHAS\n';
+  const cab = (S.sorteio||[]).length ? `🎲 ordem sorteada: ${textoOrdem()}\n` : '';
+  if(!S.picks.length) return cab+'Nenhuma escolha ainda.';
+  let s='📜 SEQUÊNCIA DAS ESCOLHAS\n'+cab;
   let rodada=-1;
   S.picks.forEach((pk,i)=>{
     const r=capPickNo(i);
@@ -4333,6 +4433,8 @@ function renderDraft(){
   document.getElementById('pickNo').textContent=Math.min(S.picks.length+1,S.order.length);
   document.getElementById('pausedBox').classList.toggle('hidden',!S.paused||done);
   document.getElementById('turnbar').classList.toggle('hidden',done);
+
+  renderRede();
   document.getElementById('doneBanner').classList.toggle('hidden',!done);
 
   const bar=document.getElementById('turnbar');
@@ -4529,7 +4631,8 @@ function renderDraft(){
   eBtn.textContent = editMode ? '✅ Sair da correção' : '✏️ Corrigir picks';
   eBtn.disabled = S.picks.length===0;
   document.getElementById('hostNote').textContent = soHost ? ''
-    : 'Você comanda: escolhe por qualquer capitão que caiu, corrige pick já feita, desfaz e reinicia. O cronômetro roda no seu aparelho.';
+    : 'Você comanda: escolhe por qualquer capitão que caiu, corrige pick já feita, desfaz e reinicia. '+
+      'O cronômetro roda no seu aparelho. · '+msgsHoje()+' mensagens hoje (limite grátis ~250 por rede).';
   renderResumo();
   try{ renderVolta(); conferMinhaEscolha(); avisaMinhaVez(); }catch(e){}
 }
@@ -4585,12 +4688,38 @@ function renderResumo(){
   });
 }
 
+/* Rede caída ou cota do serviço estourada: o cronômetro NAO sorteia mais
+   (ninguém está vendo) e a tela explica o que fazer. Roda pelo temporizador,
+   porque perder a rede não gera mudança de estado que redesenhe a tela. */
+function renderRede(){
+  const box=document.getElementById('redeBox');
+  if(!box) return;
+  const acabou = S.phase==='draft' && onClock()===null;
+  const mostrar = !!ME.room && S.phase==='draft' && pushPend && !acabou;
+  box.classList.toggle('hidden',!mostrar);
+  if(mostrar){
+    document.getElementById('redeMsg').innerHTML = cotaEstourada
+      ? 'O serviço gratuito de sincronização bateu o <b>limite diário de mensagens</b> desta rede. '+
+        'O cronômetro está parado e <b>nada será sorteado</b>. Saída rápida: <b>troque o wi-fi por 4G</b> — '+
+        'o limite é contado por rede, então no 4G a sala volta a funcionar. Senão, renova amanhã.'
+      : 'Está sem internet ou o serviço não respondeu. <b>O cronômetro parou e nada vai ser sorteado</b> '+
+        'até voltar — ninguém está vendo suas escolhas. Confira a conexão; o app reenvia sozinho.';
+  }
+}
+
 function tickClock(){
   if(S.phase!=='draft') return;
   const t=onClock();
   const el=document.getElementById('clockTxt'), fill=document.getElementById('barFill');
   if(t===null){ el.textContent='—'; fill.style.width='0%'; return; }
   const r=remaining();
+  if(pushPend){
+    el.textContent='SEM REDE';
+    el.classList.remove('warn');
+    fill.style.width=(r/TURN_SEC*100)+'%';
+    fill.classList.remove('warn');
+    return;
+  }
   if(S.paused){
     el.textContent='PAUSADO';
     el.classList.remove('warn');
@@ -4611,6 +4740,9 @@ function tickClock(){
    escolheu no último segundo chegar antes de qualquer sorteio. */
 function tentaResolver(){
   if(S.phase!=='draft'||!ME.room||S.paused) return;
+  // se o que eu faço não está chegando na sala, sortear seria injusto:
+  // ninguém está vendo o cronômetro nem consegue escolher
+  if(pushPend) return;
   const t=onClock(); if(t===null) return;
   const atraso=estouradoHa();
   if(atraso<3) return;
@@ -4622,6 +4754,7 @@ function tentaResolver(){
 setInterval(()=>{
   if(S.phase!=='draft'||!ME.room) return;
   tickClock();
+  try{ renderRede(); }catch(e){}
   tentaResolver();
 },400);
 
