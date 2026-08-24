@@ -434,6 +434,7 @@
       <p class="hint">Toque em <b>sou eu</b> no seu nome. Os outros três aparecem aqui quando entrarem.</p>
       <div id="capsPrev" class="caps"></div>
       <div class="warn hidden" id="setupWarn"></div>
+      <div class="err hidden" id="setupProb" style="line-height:1.6"></div>
     </div>
 
     <div class="card">
@@ -511,6 +512,12 @@
       <p class="hint" id="resumoSub">—</p>
       <div class="resGrid" id="resGrid"></div>
       <div class="resStats" id="resStats"></div>
+    </div>
+
+    <div class="card hidden" id="voltaCard" style="background:#FFF3D6">
+      <h2 class="ttl">🔑 Trocou de celular?</h2>
+      <p class="hint">Se você é um dos capitães e entrou noutro aparelho, toque no seu nome pra recuperar o time.</p>
+      <div class="row" id="voltaRow"></div>
     </div>
 
     <div class="card hidden" id="viewNote" style="background:var(--gold)">
@@ -2987,7 +2994,29 @@ async function sha(txt){
     return 'fnv'+h1.toString(16)+h2.toString(16);
   }
 }
-function pwGen(){ return String(Math.floor(1000+Math.random()*9000)); }
+/* Antes: sha256 de uma senha de 4 dígitos — 10 mil combinações caem em meio
+   segundo dentro do próprio navegador, e o hash é público no estado.
+   Agora: 6 dígitos com PBKDF2 de 120 mil voltas. Entrar leva ~200ms;
+   testar tudo à força passa de horas de CPU. Salas antigas (sha256)
+   continuam funcionando. */
+const PBKDF2_VOLTAS=120000;
+async function hashSenha(sala,pw){
+  try{
+    const enc=new TextEncoder();
+    const k=await crypto.subtle.importKey('raw',enc.encode(String(pw)),'PBKDF2',false,['deriveBits']);
+    const bits=await crypto.subtle.deriveBits(
+      {name:'PBKDF2',salt:enc.encode('superliga|'+sala),iterations:PBKDF2_VOLTAS,hash:'SHA-256'},k,256);
+    return 'p2:'+[...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    return await sha(sala+'|'+pw);   // ambiente sem PBKDF2: cai no antigo
+  }
+}
+async function senhaConfere(sala,pw,pwh){
+  if(!pwh) return true;
+  if(String(pwh).startsWith('p2:')) return (await hashSenha(sala,pw))===pwh;
+  return (await sha(sala+'|'+pw))===pwh;    // sala criada na versão anterior
+}
+function pwGen(){ return String(Math.floor(100000+Math.random()*900000)); }
 const pwKey=()=>'slg_pw_'+ME.room;
 const authKey=()=>'slg_auth_'+ME.room;
 function authed(){ return LS(authKey())==='1'; }
@@ -3008,6 +3037,15 @@ function setConn(st,txt){
   document.getElementById('conn').className='conn '+st;
   document.getElementById('connTxt').innerHTML = txt + (ME.room?` · <span class="room">${ME.room}</span>`:'');
 }
+/* Ordem total do estado: versão, depois carimbo, depois id do aparelho.
+   Sem o id, dois aparelhos empatados em (v,ts) recusam um ao outro pra sempre. */
+function maisNovo(a,b){
+  if(!b) return true;
+  if((a.v||0)!==(b.v||0)) return (a.v||0)>(b.v||0);
+  if((a.ts||0)!==(b.ts||0)) return (a.ts||0)>(b.ts||0);
+  return String(a.by||'') > String(b.by||'');
+}
+
 async function pullState(){
   try{
     const r=await fetch(`https://${NTFY}/${topic()}/json?poll=1&since=12h`,{cache:'no-store'});
@@ -3019,7 +3057,7 @@ async function pullState(){
         const ev=JSON.parse(line);
         if(ev.event!=='message'||!ev.message) continue;
         const st=JSON.parse(ev.message);
-        if(!best || st.v>best.v || (st.v===best.v && st.ts>best.ts)) best=st;
+        if(!best || maisNovo(st,best)) best=st;
       }catch(e){}
     }
     return best;
@@ -3030,7 +3068,7 @@ function openWS(){
   setConn('wait','conectando…');
   try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat/ws`); }
   catch(e){ setConn('off','sem sincronia'); return; }
-  ws.onopen = ()=>{ setConn('on','ao vivo'); if(pushQueue){pushQueue=false;pushNow();} };
+  ws.onopen = ()=>{ setConn('on','ao vivo'); if(pushQueue||pushPend){pushQueue=false;pushNow();} };
   ws.onmessage = ev=>{
     try{
       const d=JSON.parse(ev.data);
@@ -3047,7 +3085,7 @@ function retry(){ clearTimeout(wsTimer); wsTimer=setTimeout(openWS,4000); }
 
 /* --- presença do organizador --- */
 let hostSeen=Date.now();
-const HOST_TIMEOUT=60000;
+const HOST_TIMEOUT=100000;   // batimento de 20s: 100s evita alarme falso com a aba em segundo plano
 function hostGone(){
   return !!S.host && S.host!==ME.id && (Date.now()-hostSeen)>HOST_TIMEOUT;
 }
@@ -3057,25 +3095,54 @@ setInterval(()=>{
     hostSeen=Date.now();
     fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:ME.id}).catch(()=>{});
   }
-},15000);
+},20000);
+
+/* O ntfy corta em 4096 bytes — acima disso ele transforma a mensagem em anexo,
+   devolve 200 e o assinante recebe um texto que não é JSON. Ou seja: quebraria
+   o sincronismo em silêncio. Por isso medimos antes de mandar. */
+const LIMITE_ESTADO=4000, LIMITE_DURO=4090;
+function bytesDe(txt){ try{ return new TextEncoder().encode(txt).length; }catch(e){ return txt.length; } }
+
+let pushPend=false, reenvioTimer=null, pushando=false;
+let chatCedeAte=0;
+function chatCedeAVez(){ chatCedeAte=Date.now()+8000; try{ renderChat(); }catch(e){} }
 
 async function pushNow(){
   clearTimeout(pushTimer); pushTimer=null;
-  const body=JSON.stringify(S);
-  for(let tent=0;tent<2;tent++){
-    try{
-      const r=await fetch(`https://${NTFY}/${topic()}`,{method:'POST',headers:{'Cache-Control':'no-cache'},body});
-      if(r.status===429){ await new Promise(x=>setTimeout(x,2500)); continue; }
-      if(!r.ok) throw new Error(r.status);
-      if(connState==='off') setConn('on','ao vivo');
-      return;
-    }catch(e){}
+  if(pushando){ pushPend=true; return; }
+  pushando=true;
+  try{
+    const body=JSON.stringify(S);
+    const tam=bytesDe(body);
+    if(tam>=LIMITE_ESTADO) flash(`⚠️ Estado em ${tam} bytes, perto do limite de 4096. Encurte os nomes da lista.`);
+    if(tam>=LIMITE_DURO){
+      setConn('off','estado grande demais — encurte os nomes');
+      pushPend=false; return;
+    }
+    const esperas=[900,3000,6000];
+    for(let i=0;i<3;i++){
+      try{
+        const r=await fetch(`https://${NTFY}/${topic()}`,{method:'POST',headers:{'Cache-Control':'no-cache'},body});
+        if(r.status===429){ chatCedeAVez(); await new Promise(x=>setTimeout(x,esperas[i])); continue; }
+        if(!r.ok) throw new Error(r.status);
+        pushPend=false;
+        if(connState!=='on') setConn('on','ao vivo');
+        return;
+      }catch(e){ await new Promise(x=>setTimeout(x,esperas[i])); }
+    }
+    // não desiste: fica reenviando até passar, senão a pick fica presa neste celular
+    pushPend=true;
+    setConn('off','não enviou ainda — tentando de novo');
+  } finally {
+    pushando=false;
+    if(pushPend) agendaReenvio();
   }
-  setConn('off','offline — só neste aparelho'); pushQueue=true;
+}
+function agendaReenvio(){
+  clearTimeout(reenvioTimer);
+  reenvioTimer=setTimeout(()=>{ if(pushPend&&ME.room) pushNow(); },5000);
 }
 function schedulePush(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushNow,600); }
-// nos ultimos segundos nao da pra atrasar: manda na hora
-function pushSoon(){ if(S.phase==='draft' && remaining()<=10) pushNow(); else schedulePush(); }
 
 let flashTimer=null;
 function flash(msg){
@@ -3103,12 +3170,14 @@ function syncRole(){
 }
 function merge(inc){
   if(!inc||typeof inc.v!=='number') return;
-  if(!(inc.v>S.v || (inc.v===S.v && (inc.ts||0)>(S.ts||0)))) return;
-  // troca de comando: só vale se o próprio organizador passou, ou se foi assumido por ausência
+  if(!maisNovo(inc,S)) return;
+  // troca de comando: só vale se o organizador passou, se alguém assumiu por queda,
+  // ou se este aparelho claramente perdeu mensagens (senão ele congela pra sempre)
   if(S.host && inc.host && inc.host!==S.host){
-    const passou = inc.by===S.host;          // o organizador entregou
-    const assumiu = inc.takeover===1;        // alguém assumiu por queda
-    if(!passou && !assumiu){
+    const passou  = inc.by===S.host || inc.hostFrom===S.host;
+    const assumiu = inc.takeover===1;
+    const ficouAtras = (inc.v||0) > (S.v||0)+1;
+    if(!passou && !assumiu && !ficouAtras){
       console.warn('[superliga] recusado: troca de organizador sem passagem nem queda');
       return;
     }
@@ -3133,10 +3202,42 @@ function saveLocal(){
 }
 
 /* ================= HELPERS ================= */
+const LIMITE_NOME=24;
+/* Só tira numeração se a LISTA INTEIRA parecer numerada, e exige separador
+   depois do número — senão "10" viraria vazio e "7 de setembro" viraria
+   "de setembro". Nunca devolve linha vazia, e corta nome quilométrico
+   (que é o que estoura o limite de 4096 bytes do transporte). */
 function parseNames(raw){
-  return raw.split('\n')
-    .map(l=>l.replace(/^\s*\d{1,3}\s*[-–.)\]:]?\s*/,'').replace(/^\s*[-–•*]\s*/,'').trim())
-    .filter(Boolean);
+  const linhas=String(raw||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const comNumero=linhas.filter(l=>/^\d{1,3}\s*[-–.)\]:]\s*\S/.test(l)).length;
+  const listaNumerada = linhas.length>=3 && comNumero>=Math.ceil(linhas.length*0.6);
+  const out=[];
+  for(const linha of linhas){
+    let n=linha;
+    if(listaNumerada) n=n.replace(/^\d{1,3}\s*[-–.)\]:]\s*/,'');
+    n=n.replace(/^[-–•*]\s+/,'').trim();
+    if(!n) n=linha;                                   // nunca engole a linha
+    if(n.length>LIMITE_NOME) n=n.slice(0,LIMITE_NOME).trim();
+    if(n) out.push(n);
+  }
+  return out;
+}
+/* nomes repetidos travariam o draft: o app identifica jogador pelo nome,
+   então dois "leo" viram um só e sobra slot sem ninguém pra escolher */
+function achaRepetidos(lista){
+  const vistos=new Map(), reps=[];
+  for(const n of lista){
+    const k=n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(vistos.has(k)){ if(!reps.includes(vistos.get(k))) reps.push(vistos.get(k)); }
+    else vistos.set(k,n);
+  }
+  return reps;
+}
+function bytesEstadoFinal(caps,pls){
+  const falso={...S, caps:caps.map((n,i)=>({n,k:'#FFFFFF',by:'xxxxxxxx',ready:true})),
+    players:pls, order:snakeOrder(4,pls.length), extra:[], dead:[], prov:null,
+    picks:pls.map((n,i)=>({p:n,t:i%4,s:i})), phase:'draft', clock:Date.now(), v:999, ts:Date.now(), by:'xxxxxxxx'};
+  return bytesDe(JSON.stringify(falso));
 }
 function snakeOrder(n,total){
   const out=[];
@@ -3188,16 +3289,43 @@ const canAct=()=>{
   return t!==null&&(ME.role==='host'||ME.cap===t);
 };
 const allReady=()=>(S.caps||[]).length===4&&S.caps.every(c=>c.by&&c.ready);
+/* Cronômetro sem comparar relógios de aparelhos diferentes.
+   Quem grava carimba `clock` e `ts` no MESMO relógio, então (ts - clock) é a
+   idade do turno no instante do envio. Cada aparelho converte isso pra uma
+   âncora no relógio DELE. Celular com a hora errada deixa de sortear sozinho.
+   A âncora fica no armazenamento local, então F5 não rebobina o turno. */
+let turnoRef=null, turnoAncora=0;
+const agoraMono=()=>{ try{ return performance.now(); }catch(e){ return Date.now(); } };
+function fixaAncora(st){
+  const idade=Math.max(0,(st.ts||0)-(st.clock||0));
+  turnoRef=st.clock||0;
+  turnoAncora=agoraMono()-idade;              // monotônico: imune a salto de relógio
+  // pro F5 precisamos de relógio de parede, que sobrevive ao recarregar
+  try{ localStorage.setItem('slg_anc_'+ME.room, JSON.stringify({r:turnoRef,w:Date.now()-idade})); }catch(e){}
+}
+function ancora(){
+  if(!S.clock) return agoraMono();
+  if(turnoRef!==S.clock) fixaAncora(S);
+  return turnoAncora;
+}
+function restauraAncora(){
+  try{
+    const c=JSON.parse(localStorage.getItem('slg_anc_'+ME.room)||'null');
+    if(c && c.r===S.clock && typeof c.w==='number'){
+      turnoRef=c.r;
+      turnoAncora=agoraMono()-Math.max(0,Date.now()-c.w);
+    }
+  }catch(e){}
+}
+function decorrido(){ return Math.floor((agoraMono()-ancora())/1000); }
 function remaining(){
   if(S.paused) return Math.max(0,S.left||0);
   if(!S.clock) return TURN_SEC;
-  return Math.max(0,TURN_SEC-Math.floor((Date.now()-S.clock)/1000));
+  return Math.max(0,TURN_SEC-decorrido());
 }
-/* Quantos segundos o tempo já estourou. Vem de carimbo de tempo, então um
-   aparelho que estava com a tela apagada acorda sabendo o atraso real. */
 function estouradoHa(){
   if(S.paused||!S.clock) return 0;
-  return Math.max(0, Math.floor((Date.now()-S.clock)/1000) - TURN_SEC);
+  return Math.max(0, decorrido()-TURN_SEC);
 }
 
 /* ================= TELAS ================= */
@@ -3224,7 +3352,7 @@ async function doCreate(){
   S=blank(); S.host=ME.id;
   const pw=pwGen();
   LS(pwKey(),pw); LS(authKey(),'1');
-  S.pwh=await sha(ME.room+'|'+pw);
+  S.pwh=await hashSenha(ME.room,pw);
   history.replaceState(null,'','?sala='+ME.room);
   openWS(); saveLocal(); route(); pushNow();
 }
@@ -3240,11 +3368,15 @@ async function doJoin(){
   if(!st){ err.textContent='Não achei essa sala. Confira o código com o organizador.'; err.classList.remove('hidden'); setConn('off','sem sala'); return; }
   S=st;
   if(pw){
-    if(await sha(code+'|'+pw)===S.pwh) LS(authKey(),'1');
+    const btn=document.querySelector('#vLobby button.go');
+    if(btn){ btn.disabled=true; btn.textContent='Conferindo…'; }
+    const ok=await senhaConfere(code,pw,S.pwh);
+    if(btn){ btn.disabled=false; btn.textContent='Entrar ⚽'; }
+    if(ok) LS(authKey(),'1');
     else { err.textContent='Senha incorreta. Deixe em branco se quiser só assistir.'; err.classList.remove('hidden'); setConn('off','sem sala'); return; }
   }
   history.replaceState(null,'','?sala='+code);
-  syncRole(); openWS(); saveLocal(); route(); pullChat();
+  syncRole(); restauraAncora(); openWS(); saveLocal(); route(); pullChat();
 }
 
 async function doAuth(inputId){
@@ -3253,8 +3385,9 @@ async function doAuth(inputId){
   const pw=(document.getElementById(id).value||'').trim();
   const err=document.getElementById(errId);
   if(!pw){ err.textContent='Digite a senha.'; err.classList.remove('hidden'); return; }
-  if(await sha(ME.room+'|'+pw)!==S.pwh){
-    err.textContent='Senha incorreta.'; err.classList.remove('hidden'); return;
+  err.textContent='Conferindo…'; err.classList.remove('hidden');
+  if(!(await senhaConfere(ME.room,pw,S.pwh))){
+    err.textContent='Senha incorreta.'; return;
   }
   err.classList.add('hidden');
   LS(authKey(),'1'); document.getElementById(id).value='';
@@ -3296,13 +3429,13 @@ function renderSetupCounts(){
 async function regenPw(){
   const pw=pwGen(); LS(pwKey(),pw);
   document.getElementById('pwIn').value=pw;
-  const h=await sha(ME.room+'|'+pw);
+  const h=await hashSenha(ME.room,pw);
   commit(st=>{ st.pwh=h; });
 }
 async function setPw(pw){
   pw=String(pw||'').trim(); if(!pw) return;
   LS(pwKey(),pw);
-  const h=await sha(ME.room+'|'+pw);
+  const h=await hashSenha(ME.room,pw);
   commit(st=>{ st.pwh=h; },true);
 }
 function copyPw(){ copyTxt(myPw(),'copyPwBtn','📋 Copiar senha'); }
@@ -3381,7 +3514,19 @@ function renderSetup(){
   if(clash) w.textContent='⚠️ '+clash;
 
   const nCaps=parseNames(capsIn.value).length, nPls=parseNames(plsIn.value).length;
-  const ok = nCaps===4 && nPls>=4 && allReady();
+  const capsArr=parseNames(capsIn.value), plsArr=parseNames(plsIn.value);
+  const repCaps=achaRepetidos(capsArr), repPls=achaRepetidos(plsArr);
+  const cruzados=plsArr.filter(x=>capsArr.some(c=>c.toLowerCase()===x.toLowerCase()));
+  const tam = (nCaps===4&&nPls>=4) ? bytesEstadoFinal(capsArr,plsArr) : 0;
+  const problemas=[];
+  if(repCaps.length) problemas.push('Capitão repetido na lista: '+repCaps.join(', ')+'.');
+  if(repPls.length) problemas.push('Jogador repetido: '+repPls.join(', ')+'. Dois nomes iguais travam o draft — coloque um sobrenome ou apelido pra diferenciar.');
+  if(cruzados.length) problemas.push('Está como capitão E na lista de jogadores: '+cruzados.join(', ')+'.');
+  if(tam>=LIMITE_ESTADO) problemas.push('Os nomes estão longos demais ('+tam+' bytes de limite 4096) — encurte pra apelidos.');
+  const av=document.getElementById('setupProb');
+  if(av){ av.classList.toggle('hidden',!problemas.length); av.innerHTML=problemas.map(x=>'⚠️ '+esc(x)).join('<br>'); }
+
+  const ok = nCaps===4 && nPls>=4 && allReady() && !problemas.length;
   document.getElementById('startBtn').disabled=!ok;
   const rounds=Math.ceil(nPls/4), base=Math.floor(nPls/4), rest=nPls%4;
   let msg;
@@ -3413,12 +3558,16 @@ function shuffleBox(id){
 function startDraft(){
   const caps=parseNames(capsIn.value).slice(0,4), pls=parseNames(plsIn.value);
   const err=document.getElementById('setupErr');
+  const barra=m=>{ err.textContent=m; err.classList.remove('hidden'); };
   const dup=pls.filter(p=>caps.some(c=>c.toLowerCase()===p.toLowerCase()));
-  if(dup.length){
-    err.textContent='Estes nomes estão como capitão E na lista de jogadores: '+dup.join(', ');
-    err.classList.remove('hidden'); return;
-  }
-  if(!allReady()){ err.textContent='Espere os 4 capitães marcarem Pronto.'; err.classList.remove('hidden'); return; }
+  if(dup.length) return barra('Estes nomes estão como capitão E na lista de jogadores: '+dup.join(', '));
+  const repP=achaRepetidos(pls);
+  if(repP.length) return barra('Jogador repetido na lista: '+repP.join(', ')+'. O app identifica jogador pelo nome, então dois iguais travariam o draft. Diferencie com sobrenome ou apelido.');
+  const repC=achaRepetidos(caps);
+  if(repC.length) return barra('Capitão repetido: '+repC.join(', ')+'.');
+  const tam=bytesEstadoFinal(caps,pls);
+  if(tam>=LIMITE_ESTADO) return barra('Os nomes somam '+tam+' bytes e o transporte corta em 4096 — o draft pararia de sincronizar no meio. Encurte pra apelidos.');
+  if(!allReady()) return barra('Espere os 4 capitães marcarem Pronto.');
   err.classList.add('hidden');
   commit(st=>{
     st.players=pls; st.picks=[]; st.prov=null;
@@ -3573,12 +3722,18 @@ function toggleReady(){
 
 /* ================= DRAFT ================= */
 let lastAdded=null, autoLock=false;
+let minhaEscolha=null;    // o que EU deixei na mesa, pra avisar se não valeu
+let avisadoTurno='';      // pra vibrar/apitar uma vez por turno
 
 function setProv(name){
   if(!canAct()) return;
   const t=onClock(); if(t===null) return;
   if(S.picks.some(p=>p.p===name)) return;
-  const urgente = remaining()<=10;
+  // primeiro toque do turno vai na hora (fecha a janela do atraso);
+  // trocar de ideia depois pode esperar os 600ms
+  const primeiroToque = !(S.prov && S.prov.t===t);
+  const urgente = primeiroToque || remaining()<=10;
+  minhaEscolha = { p:name, s:nextSlot() };
   commit(st=>{ st.prov={p:name,t}; }, !urgente);
 }
 function clearProv(){
@@ -3596,6 +3751,10 @@ function confirmPick(){
 }
 function autoResolve(){
   if(autoLock||S.paused) return;
+  if(S.phase!=='draft') return;
+  if(ME.role==='view') return;              // torcedor nunca grava
+  if(ME.role!=='host' && ME.cap<0) return;  // e quem não tem time também não
+  if(estouradoHa()<3) return;               // ninguém atropela o cronômetro
   const t=onClock(); if(t===null) return;
   const sl=nextSlot();
   autoLock=true;
@@ -3645,6 +3804,10 @@ async function sendChat(){
   if(!txt) return;
   LS('slg_name',nome);
   const agora=Date.now();
+  if(agora<chatCedeAte){
+    err.textContent='Segura a zoeira '+Math.ceil((chatCedeAte-agora)/1000)+'s — as picks passam na frente.';
+    err.classList.remove('hidden'); return;
+  }
   chatSent=chatSent.filter(t=>agora-t<60000);
   if(chatSent.length && agora-chatSent[chatSent.length-1]<3000){
     err.textContent='Calma — 3 segundos entre mensagens.'; err.classList.remove('hidden'); return;
@@ -3658,6 +3821,7 @@ async function sendChat(){
                 c:(ME.cap>=0?1:0), h:(ME.role==='host'?1:0)};
   try{
     const r=await fetch(`https://${NTFY}/${topic()}-chat`,{method:'POST',body:JSON.stringify(pacote)});
+    if(r.status===429){ chatCedeAVez(); throw new Error(429); }
     if(!r.ok) throw new Error(r.status);
   }catch(e){
     err.textContent='Não consegui enviar. Tenta de novo em alguns segundos.'; err.classList.remove('hidden');
@@ -3774,14 +3938,14 @@ function giveHost(i){
   const c=(S.caps||[])[i];
   if(!c||!c.by||c.by===ME.id) return;
   if(!confirm(`Passar o comando da sala para ${c.n}? Você deixa de ser o organizador.`)) return;
-  commit(st=>{ st.host=c.by; st.takeover=0; });
+  commit(st=>{ st.host=c.by; st.takeover=0; st.hostFrom=ME.id; });
   flash(`🎩 Comando passado para ${c.n}.`);
 }
 function takeHost(){
   if(ME.role==='view'){ alert('Só capitães com a senha podem assumir o comando.'); return; }
-  if(!hostGone()){ alert('O organizador está online. O comando só pode ser assumido se ele ficar 1 minuto fora do ar.'); return; }
+  if(!hostGone()){ alert('O organizador está online. O comando só pode ser assumido depois de uns 2 minutos sem sinal dele.'); return; }
   if(!confirm('Assumir o comando da sala? Todos vão ver o aviso de que você assumiu.')) return;
-  commit(st=>{ st.host=ME.id; st.takeover=1; });
+  commit(st=>{ st.host=ME.id; st.takeover=1; st.hostFrom=''; });
   hostSeen=Date.now();
 }
 function hostPanelHTML(){
@@ -3794,9 +3958,10 @@ function hostPanelHTML(){
 function togglePause(){
   if(ME.role!=='host'){ alert('Só o organizador pode pausar o draft.'); return; }
   if(S.paused){
-    const seg = Math.max(1, S.left||TURN_SEC);
+    // devolve o que sobrou, com piso de 10s — e nunca o minuto inteiro por acidente
+    const seg = Math.min(TURN_SEC, Math.max(10, S.left||0));
     commit(st=>{ st.paused=0; st.left=0; st.clock=Date.now()-(TURN_SEC-seg)*1000; });
-    flash('▶️ Draft retomado.');
+    flash(`▶️ Draft retomado com ${seg}s.`);
   } else {
     const seg = remaining();
     commit(st=>{ st.paused=1; st.left=seg; });
@@ -3864,6 +4029,66 @@ function resetAll(){
   if(!confirm('Começar um draft novo? Os picks atuais serão apagados.')) return;
   commit(st=>{ st.picks=[]; st.prov=null; st.phase='setup'; st.clock=0;
                st.extra=[]; st.dead=[]; st.paused=0; st.left=0; });
+}
+
+/* 13. capitão que trocou de aparelho recupera o time */
+function reassumir(i){
+  if(ME.role==='view'){ alert('Só capitães com a senha podem assumir um time.'); return; }
+  const c=(S.caps||[])[i]; if(!c) return;
+  if(!confirm(`Assumir o time de ${c.n} neste aparelho? Se o celular antigo voltar, ele vira só espectador.`)) return;
+  ME.cap=i;
+  commit(st=>{
+    (st.caps||[]).forEach((x,j)=>{ if(x.by===ME.id&&j!==i){x.by='';x.ready=false;} });
+    st.caps[i].by=ME.id; st.caps[i].ready=true;
+  });
+  flash(`🔑 Você assumiu o time de ${c.n} neste aparelho.`);
+}
+function renderVolta(){
+  const card=document.getElementById('voltaCard');
+  const mostrar = S.phase==='draft' && ME.role==='cap' && ME.cap<0;
+  card.classList.toggle('hidden',!mostrar);
+  if(!mostrar) return;
+  const row=document.getElementById('voltaRow'); row.innerHTML='';
+  (S.caps||[]).forEach((c,i)=>{
+    const b=document.createElement('button'); b.className='sm';
+    b.textContent='sou o '+c.n; b.onclick=()=>reassumir(i);
+    row.appendChild(b);
+  });
+}
+
+/* 14. vibra e apita quando chega a sua vez — o celular no bolso é o motivo
+   número um de pick sorteada por tempo. Falha calado se o navegador não deixar. */
+function avisaMinhaVez(){
+  if(S.paused) return;
+  const t=onClock();
+  if(t===null || ME.cap!==t) return;
+  const chave=ME.room+'|'+S.picks.length+'|'+t;
+  if(avisadoTurno===chave) return;
+  avisadoTurno=chave;
+  try{ if(navigator.vibrate) navigator.vibrate([130,90,130]); }catch(e){}
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC){
+      const ac=new AC(), o=ac.createOscillator(), g=ac.createGain();
+      o.type='sine'; o.frequency.value=880;
+      g.gain.value=0.0001; o.connect(g); g.connect(ac.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.09, ac.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.35);
+      setTimeout(()=>{ try{o.stop(); ac.close();}catch(e){} },420);
+    }
+  }catch(e){}
+}
+
+/* 16. avisa quando a escolha que EU deixei na mesa não valeu */
+function conferMinhaEscolha(){
+  if(!minhaEscolha) return;
+  const pk=(S.picks||[]).find(p=>p.s===minhaEscolha.s);
+  if(!pk) return;
+  if(pk.p!==minhaEscolha.p){
+    flash(`⚠️ Sua escolha (${minhaEscolha.p}) não chegou a tempo — entrou ${pk.p}.`);
+  }
+  minhaEscolha=null;
 }
 
 function renderDraft(){
@@ -3942,10 +4167,16 @@ function renderDraft(){
   else{
     lock.classList.remove('hidden');
     if(canAct()){
+      const semSinal = connState==='off';
       lock.className='locked';
       lock.textContent = (ME.role==='host'&&ME.cap!==t)
         ? `🎩 Você é o organizador — pode escolher por ${caps[t].n}.`
         : '⚡ Sua vez! Toca no jogador, depois confirme.';
+      if(semSinal){
+        lock.className='locked';
+        lock.style.background='var(--red)'; lock.style.color='#fff';
+        lock.textContent='📵 SEM SINAL NA SUA VEZ — sua escolha pode não chegar. Confira a internet antes de confirmar.';
+      } else { lock.style.background=''; lock.style.color=''; }
     }else{
       lock.className='locked wait';
       const pv=S.prov&&S.prov.p ? ` Já colocou ${S.prov.p} em cima da mesa.` : '';
@@ -3959,7 +4190,11 @@ function renderDraft(){
   const shown=q?avail.filter(n=>n.toLowerCase().includes(q)):avail;
   document.getElementById('poolTitle').textContent=`Disponíveis (${avail.length})`;
   const pool=document.getElementById('pool'); pool.innerHTML='';
-  if(!avail.length&&!S.prov) pool.innerHTML='<div class="empty">'+(editMode
+  if(!avail.length && !S.prov && !done){
+    pool.innerHTML='<div class="empty">⚠️ Acabaram os jogadores disponíveis mas ainda falta pick.<br>'+
+      'Organizador: adicione um nome em <b>Novo draft</b> ou desfaça uma pick pra liberar alguém.</div>';
+  }
+  else if(!avail.length&&!S.prov) pool.innerHTML='<div class="empty">'+(editMode
       ? 'Ninguém sobrando — dá pra trocar dois jogadores de time entre si.'
       : 'Acabou — todos escolhidos ✅')+'</div>';
   else if(!shown.length) pool.innerHTML='<div class="empty">Nenhum nome com “'+esc(q)+'”</div>';
@@ -4038,6 +4273,7 @@ function renderDraft(){
   document.getElementById('hostNote').textContent = soHost ? ''
     : 'Você comanda: escolhe por qualquer capitão que caiu, corrige pick já feita, desfaz e reinicia. O cronômetro roda no seu aparelho.';
   renderResumo();
+  try{ renderVolta(); conferMinhaEscolha(); avisaMinhaVez(); }catch(e){}
 }
 
 function renderResumo(){
@@ -4176,10 +4412,10 @@ function toggleExport(){
     if(savedRoom===sala && savedCap>=0) ME.cap=savedCap;
     setConn('wait','entrando na sala…');
     try{ const c=localStorage.getItem('slg_state_'+sala); if(c) S=JSON.parse(c); }catch(e){}
-    syncRole();
+    syncRole(); restauraAncora();
     const st=await pullState();
     if(st) merge(st);
-    syncRole(); openWS(); route(); pullChat();
+    syncRole(); restauraAncora(); openWS(); route(); pullChat();
   } else {
     setConn('off','sem sala'); show('vLobby');
   }
