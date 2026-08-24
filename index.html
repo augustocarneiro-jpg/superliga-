@@ -33,6 +33,8 @@
   .brand.mini svg{width:70px}
   .brand.mini{margin-bottom:12px}
   .brand.mini .sub{display:none}
+  /* no celular o logo sai da tela de draft: sao 70px que valem mais como time */
+  @media(max-width:940px){ .brand.mini{display:none} }
 
   .card{
     background:var(--cream-2);border:3px solid var(--ink);border-radius:10px;
@@ -75,8 +77,8 @@
 
   /* conexao */
   .conn{
-    position:fixed;left:50%;transform:translateX(-50%);
-    bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;
+    position:fixed;left:14px;transform:none;
+    bottom:calc(20px + env(safe-area-inset-bottom));z-index:40;max-width:calc(100vw - 90px);
     display:flex;align-items:center;gap:8px;background:var(--ink);color:var(--cream);
     border-radius:999px;padding:8px 15px;font-size:.76rem;font-weight:800;box-shadow:var(--sh-sm);border:2px solid var(--ink)
   }
@@ -86,6 +88,13 @@
   .conn.off .led{background:var(--red)}
   @keyframes blink{50%{opacity:.3}}
   .conn .room{font-family:'Anton',sans-serif;letter-spacing:.18em;color:var(--gold-2)}
+  @media(max-width:940px){
+    .conn{padding:6px 11px;font-size:.68rem;opacity:.96}
+    .conn .led{width:8px;height:8px}
+    /* estando tudo certo, o aviso so cobria a lista de jogadores.
+       aparece so quando ha algo pra dizer. */
+    .conn.on{display:none}
+  }
 
   /* sala */
   .share{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
@@ -134,34 +143,53 @@
   /* barra da vez + cronometro */
   .turnbar{
     border:3px solid var(--ink);border-radius:10px;box-shadow:var(--sh);background:var(--ink);
-    color:var(--cream);padding:15px 18px;margin-bottom:18px
+    color:var(--cream);padding:11px 14px;margin-bottom:14px
   }
-  .turnbar .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .turnbar .swatch{width:34px;height:34px;border-color:var(--cream)}
-  .turnbar .lbl{font-family:'Anton',sans-serif;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;opacity:.75}
-  .turnbar .who{font-family:'Anton',sans-serif;font-size:1.7rem;letter-spacing:.02em;line-height:1.08}
-  .turnbar .who small{font-size:.72rem;letter-spacing:.1em;opacity:.8;display:block}
-  .turnbar .right{margin-left:auto;text-align:right}
-  .turnbar .pk{font-family:'Anton',sans-serif;font-size:1rem;letter-spacing:.04em}
-  .turnbar .next{font-size:.75rem;opacity:.82;font-weight:600;margin-top:3px}
+  .tb-linha1{display:flex;align-items:center;gap:11px}
+  .tb-quem{min-width:0;flex:1}
+  .turnbar .swatch{width:30px;height:30px;border-color:var(--cream);flex:none}
+  .turnbar .lbl{font-family:'Anton',sans-serif;font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;opacity:.7}
+  .turnbar .who{
+    font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:.02em;line-height:1.05;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .turnbar .who small{font-size:.64rem;letter-spacing:.09em;opacity:.8;display:block;font-family:'Nunito';font-weight:700}
+  .tb-meta{display:flex;align-items:baseline;gap:9px;margin-top:8px;flex-wrap:wrap}
+  .turnbar .pk{font-family:'Anton',sans-serif;font-size:.82rem;letter-spacing:.04em;color:var(--gold-2);flex:none}
+  .turnbar .next{font-size:.72rem;opacity:.8;font-weight:600;line-height:1.35}
   .turnbar.mine{background:#17361f;box-shadow:0 0 0 3px var(--gold),var(--sh)}
   .clock{
-    font-family:'Anton',sans-serif;font-size:2.5rem;line-height:1;letter-spacing:.02em;
+    font-family:'Anton',sans-serif;font-size:2rem;line-height:1;letter-spacing:.02em;flex:none;
     color:var(--gold-2);font-variant-numeric:tabular-nums
   }
   .clock.warn{color:#FFB4B0;animation:pulse .8s infinite}
   @keyframes pulse{50%{opacity:.45}}
-  .bar{height:9px;background:rgba(247,232,198,.18);border-radius:999px;margin-top:13px;overflow:hidden}
+  .bar{height:7px;background:rgba(247,232,198,.18);border-radius:999px;margin-top:9px;overflow:hidden}
   .bar i{display:block;height:100%;background:var(--gold);border-radius:999px;transition:width .25s linear}
   .bar i.warn{background:var(--red)}
   .yourturn{
-    font-family:'Anton',sans-serif;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;
-    background:var(--gold);color:var(--ink);border-radius:999px;padding:3px 10px;display:inline-block;margin-top:4px
+    font-family:'Anton',sans-serif;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--gold);color:var(--ink);border-radius:6px;padding:6px 10px;
+    display:block;margin-top:9px;text-align:center
   }
 
   /* board */
   .board{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
-  @media(max-width:940px){.board{grid-template-columns:1fr}.pool{max-height:none;overflow:visible}}
+  @media(max-width:940px){
+    .board{grid-template-columns:1fr;gap:14px}
+    .pool{max-height:none;overflow:visible}
+    /* quem NAO esta escolhendo ve os times primeiro; quem esta ve a lista primeiro */
+    body.assistir #colPool{order:2}
+    body.assistir #colTeams{order:1}
+  }
+  .poolHead{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:transparent;border:none;box-shadow:none;padding:2px 0;color:var(--ink)
+  }
+  .poolHead:hover{background:transparent}
+  .poolHead:active{transform:none;box-shadow:none}
+  .poolHead .seta{font-size:.9rem;color:var(--ink-soft)}
+  #poolBody.escondido{display:none}
   .pool{display:flex;flex-direction:column;gap:7px;max-height:60vh;overflow-y:auto;padding:2px}
   .pool .p{
     font-family:'Nunito',sans-serif;text-transform:none;letter-spacing:0;font-weight:800;font-size:1rem;
@@ -180,16 +208,57 @@
 
   /* caixa da pick provisoria */
   .provbox{
-    border:3px dashed var(--ink);border-radius:10px;background:#FFF7E4;padding:13px;margin-bottom:12px
+    border:3px dashed var(--ink);border-radius:10px;background:#FFF7E4;padding:11px 12px;margin-bottom:10px
   }
-  .provbox .t{font-family:'Anton',sans-serif;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
-  .provbox .n{font-family:'Anton',sans-serif;font-size:1.5rem;line-height:1.15;margin:2px 0 10px}
-  .provbox .n.none{font-size:.95rem;color:var(--ink-soft);font-family:'Nunito';font-weight:700}
-  .provbox .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .provbox .t{font-family:'Anton',sans-serif;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .provbox .n{font-family:'Anton',sans-serif;font-size:1.3rem;line-height:1.1;margin:1px 0 8px}
+  .provbox .n.none{font-size:.9rem;color:var(--ink-soft);font-family:'Nunito';font-weight:700}
+  .provbox .acts{display:flex;gap:7px;flex-wrap:wrap}
+  @media(max-width:940px){
+    .provbox{padding:9px 11px}
+    .provbox .n{font-size:1.15rem;margin-bottom:7px}
+    .provbox .acts button{padding:10px 13px;font-size:.86rem}
+    .provbox .acts button.sm{padding:9px 11px;font-size:.7rem}
+    /* mais nomes na tela: item da lista mais baixo */
+    .pool{gap:6px}
+    .pool .p{padding:9px 11px;font-size:.95rem}
+    #search{padding:9px 11px}
+
+    /* Na sua vez, a caixa da pick vira barra fixa no rodape.
+       Assim a lista de jogadores fica com a tela inteira e o botao de
+       confirmar esta sempre a um toque, sem precisar rolar de volta. */
+    body.escolhendo .provbox{
+      position:fixed;left:0;right:0;bottom:0;z-index:46;margin:0;
+      border-radius:12px 12px 0 0;border-width:3px 0 0;background:#FFF3D6;
+      padding:8px 12px calc(8px + env(safe-area-inset-bottom))
+    }
+    body.escolhendo .provbox .t{
+      font-size:.56rem;letter-spacing:.12em;margin-bottom:1px
+    }
+    body.escolhendo .provbox .n{
+      margin:0 0 7px;font-size:1.1rem;line-height:1.15;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    body.escolhendo .provbox .acts{gap:7px}
+    body.escolhendo .provbox .acts button.ok{flex:1;padding:12px 10px;font-size:.86rem}
+    body.escolhendo .provbox .acts button.sm{flex:none;padding:12px 14px;font-size:.78rem}
+    body.escolhendo{padding-bottom:150px}
+    body.escolhendo #chatFab{bottom:calc(116px + env(safe-area-inset-bottom));width:48px;height:48px;font-size:1.25rem}
+    body.escolhendo .conn{bottom:calc(122px + env(safe-area-inset-bottom))}
+  }
 
   .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  @media(max-width:1080px){.teams{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:480px){.teams{grid-template-columns:1fr}}
+  @media(max-width:1080px){.teams{grid-template-columns:repeat(2,1fr);gap:9px}}
+  @media(max-width:940px){
+    /* no celular o time vem fechado: cor, capitao, quantos e o ultimo escolhido.
+       toca no cabecalho pra abrir a lista inteira. */
+    .team:not(.aberto) ol{display:none!important}
+    /* cartao fechado nao precisa de borda embaixo do cabecalho */
+    .team:not(.aberto) .head{border-bottom:none}
+    .team .head{cursor:pointer}
+    .team .head .tn{font-size:.78rem}
+    .team .head .cap{font-size:.74rem}
+  }
   .team{border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--cream-2);box-shadow:var(--sh-sm)}
   .team.on{box-shadow:0 0 0 3px var(--gold),var(--sh)}
   .team .head{padding:8px 10px;border-bottom:3px solid var(--ink)}
@@ -230,6 +299,17 @@
     font-size:.82rem;white-space:pre-wrap;margin-top:14px;font-family:ui-monospace,Menlo,monospace;line-height:1.6
   }
   .hidden{display:none!important}
+  .soCelular{display:none}
+  @media(max-width:940px){
+    .soDesktop{display:none}
+    .soCelular{display:inline}
+    /* cards mais justos no celular */
+    .card{padding:13px}
+    #colPool{padding:11px 13px}
+    #histCard,#chatCard{padding:13px}
+    .hist{max-height:none}
+    h2.ttl{font-size:.95rem}
+  }
   .err{color:var(--red);font-weight:800;font-size:.85rem;margin-top:9px}
   .warn{background:#FFF3D6;border:2.5px solid var(--gold);border-radius:8px;padding:9px 11px;font-size:.8rem;font-weight:700;margin-top:10px}
   /* resumo final */
@@ -259,12 +339,22 @@
   #histCard{margin-top:18px}
   .hist{display:flex;flex-direction:column;gap:5px;max-height:340px;overflow-y:auto}
   .hist .h{
-    display:flex;align-items:center;gap:9px;background:#fff;border:2px solid var(--ink);
-    border-radius:6px;padding:6px 9px;font-size:.9rem;font-weight:700
+    display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--ink);
+    border-radius:6px;padding:6px 9px;font-size:.9rem;font-weight:700;
+    white-space:nowrap;overflow:hidden
   }
   .hist .h .np{
-    font-family:'Anton',sans-serif;font-size:.72rem;background:var(--ink);color:var(--cream);
-    border-radius:4px;padding:2px 7px;min-width:54px;text-align:center;flex:none
+    font-family:'Anton',sans-serif;font-size:.7rem;background:var(--ink);color:var(--cream);
+    border-radius:4px;padding:2px 7px;text-align:center;flex:none
+  }
+  .hist .h .cap{flex:none}
+  .hist .h .pl{overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:940px){
+    /* no celular a frase inteira nao cabe: fica "1ª ● tucho → lessa" */
+    .hist .h{gap:6px;font-size:.86rem;padding:6px 8px}
+    .hist .h .arw{display:none}
+    .hist .h .pl::before{content:'→ ';color:var(--ink-soft);font-weight:600}
+    .hist .h .tag{font-size:.5rem}
   }
   .hist .h .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);flex:none}
   .hist .h .cap{font-weight:900}
@@ -289,8 +379,60 @@
   .gone h3{font-family:'Anton',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:.86rem}
   .gone p{font-size:.82rem;font-weight:600;margin:3px 0 9px}
 
-  /* chat da torcida */
+  /* botao flutuante do chat */
+  #chatFab{
+    position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:45;
+    width:56px;height:56px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);
+    box-shadow:var(--sh);font-size:1.5rem;padding:0;display:grid;place-items:center
+  }
+  #chatFab .bolha{
+    position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+    font-family:'Anton',sans-serif;font-size:.66rem;min-width:21px;height:21px;border-radius:999px;
+    border:2px solid var(--ink);display:grid;place-items:center;padding:0 4px
+  }
+  /* aviso de mensagem nova: fica 5s e some, mas continua no historico */
+  #chatToast{
+    position:fixed;left:50%;transform:translateX(-50%);z-index:55;
+    top:calc(10px + env(safe-area-inset-top));width:min(94vw,520px);
+    display:flex;flex-direction:column;gap:6px;pointer-events:none
+  }
+  #chatToast .t{
+    background:var(--ink);color:var(--cream);border:2.5px solid var(--ink);border-radius:10px;
+    padding:9px 13px;font-size:.88rem;font-weight:700;box-shadow:var(--sh-sm);
+    animation:entra .18s ease-out
+  }
+  #chatToast .t b{
+    font-family:'Anton',sans-serif;font-size:.74rem;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--gold-2);margin-right:6px
+  }
+  #chatToast .t.saindo{animation:sai .3s ease-in forwards}
+  @keyframes entra{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  @keyframes sai{to{opacity:0;transform:translateY(-8px)}}
+
+  /* painel do chat em gaveta no celular */
   #chatCard{margin-top:18px}
+  @media(max-width:940px){
+    #chatCard{
+      position:fixed;left:0;right:0;bottom:0;z-index:50;margin:0;border-radius:14px 14px 0 0;
+      border-width:3px 0 0;max-height:76vh;overflow-y:auto;
+      padding-bottom:calc(16px + env(safe-area-inset-bottom))
+    }
+    #chatCard.fechado{display:none}
+    .chatlog{max-height:46vh}
+  }
+  #chatFechar{display:none}
+  @media(max-width:940px){ #chatFechar{display:inline-block} }
+
+  /* rodape: senha discreta */
+  .rodapeLinks{text-align:center;margin-top:18px}
+  .rodapeLinks button{
+    background:transparent;box-shadow:none;border:2px dashed var(--ink-soft);color:var(--ink-soft);
+    font-size:.68rem;padding:7px 12px
+  }
+  #authBox{
+    max-width:340px;margin:10px auto 0;background:var(--cream-2);border:2.5px solid var(--ink);
+    border-radius:10px;padding:12px
+  }
   .chatlog{
     display:flex;flex-direction:column;gap:6px;max-height:270px;overflow-y:auto;
     background:#fff;border:2.5px solid var(--ink);border-radius:8px;padding:10px;margin-bottom:10px
@@ -310,11 +452,16 @@
   .divider::before,.divider::after{content:'';flex:1;height:2px;background:currentColor;opacity:.3}
   .divider span{font-family:'Anton',sans-serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase}
   .steps{counter-reset:s;display:flex;flex-direction:column;gap:7px;margin-top:10px}
-  .steps li{list-style:none;font-size:.86rem;font-weight:700;display:flex;gap:9px;align-items:flex-start}
+  /* sem flex aqui: o <b> dentro do texto virava uma coluna separada no celular */
+  .steps li{
+    list-style:none;font-size:.88rem;font-weight:700;line-height:1.5;
+    position:relative;padding-left:27px
+  }
   .steps li::before{
-    counter-increment:s;content:counter(s);font-family:'Anton',sans-serif;font-size:.7rem;
+    counter-increment:s;content:counter(s);position:absolute;left:0;top:2px;
+    font-family:'Anton',sans-serif;font-size:.7rem;
     background:var(--ink);color:var(--cream);width:19px;height:19px;border-radius:50%;
-    display:grid;place-items:center;flex:none;margin-top:2px
+    display:grid;place-items:center
   }
 </style>
 </head>
@@ -520,44 +667,30 @@
       <div class="row" id="voltaRow"></div>
     </div>
 
-    <div class="card hidden" id="viewNote" style="background:var(--gold)">
-      <div class="row between">
-        <div>
-          <h2 class="ttl">👀 Modo torcida</h2>
-          <p class="hint" style="margin:2px 0 0">Você está assistindo ao vivo. Só os capitães escolhem.</p>
-        </div>
-        <div class="row">
-          <input id="authPw2" class="code" type="text" inputmode="numeric" maxlength="12" style="max-width:150px" placeholder="senha" autocomplete="off">
-          <button class="sm" onclick="doAuth('authPw2')">🔑 Sou capitão</button>
-        </div>
-      </div>
-      <div class="err hidden" id="authErr2"></div>
-    </div>
-
     <div class="done hidden" id="pausedBox" style="background:var(--red);color:#fff">
       <h2>⏸ Draft pausado</h2>
       <p id="pausedMsg">O organizador está ajustando alguma coisa. O cronômetro está congelado.</p>
     </div>
 
     <div class="turnbar" id="turnbar">
-      <div class="top">
+      <div class="tb-linha1">
         <span class="swatch" id="turnSwatch"></span>
-        <div>
+        <div class="tb-quem">
           <div class="lbl">vez de escolher</div>
           <div class="who" id="turnWho">—</div>
-          <div id="turnMine" class="yourturn hidden">⚡ é a sua vez!</div>
         </div>
-        <div class="right">
-          <div class="clock" id="clockTxt">1:00</div>
-          <div class="pk">Rodada <span id="roundNo">1</span> · Pick <span id="pickNo">1</span>/<span id="pickTotal">20</span></div>
-          <div class="next" id="upnext"></div>
-        </div>
+        <div class="clock" id="clockTxt">1:00</div>
       </div>
       <div class="bar" id="barWrap"><i id="barFill" style="width:100%"></i></div>
+      <div class="tb-meta">
+        <span class="pk">R<span id="roundNo">1</span> · pick <span id="pickNo">1</span>/<span id="pickTotal">20</span></span>
+        <span class="next" id="upnext"></span>
+      </div>
+      <div id="turnMine" class="yourturn hidden">⚡ é a sua vez — toque num jogador</div>
     </div>
 
-    <div class="board">
-      <div class="card" style="margin:0">
+    <div class="board" id="board">
+      <div class="card" id="colPool" style="margin:0">
         <div id="editBar" class="editbar hidden">
           <h3>✏️ Modo correção</h3>
           <p id="editMsg"></p>
@@ -566,7 +699,7 @@
           </div>
         </div>
         <div id="provBox" class="provbox hidden">
-          <div class="t">pick provisória — ainda não valeu</div>
+          <div class="t" id="provRot">pick provisória — ainda não valeu</div>
           <div class="n none" id="provName">nenhum jogador selecionado</div>
           <div class="acts">
             <button class="ok" id="confirmBtn" onclick="confirmPick()" disabled>✅ Confirmar e passar</button>
@@ -574,13 +707,18 @@
           </div>
         </div>
         <div id="poolLock" class="locked hidden"></div>
-        <h2 class="ttl" id="poolTitle">Disponíveis</h2>
-        <input id="search" type="text" placeholder="Buscar jogador..." autocomplete="off" style="margin:11px 0">
-        <div class="pool" id="pool"></div>
+        <button class="poolHead" id="poolHead" onclick="togglePool()">
+          <span class="ttl" id="poolTitle">Disponíveis</span>
+          <span class="seta" id="poolSeta">▾</span>
+        </button>
+        <div id="poolBody">
+          <input id="search" type="text" placeholder="Buscar jogador..." autocomplete="off" style="margin:11px 0">
+          <div class="pool" id="pool"></div>
+        </div>
       </div>
-      <div>
+      <div id="colTeams">
         <div class="teams" id="teams"></div>
-        <div class="row" style="margin-top:16px">
+        <div class="row" style="margin-top:16px" id="draftCtrls">
           <button onclick="copyExport()" id="copyBtn">📋 Copiar times</button>
           <button class="sm" onclick="togglePause()" id="pauseBtn">⏸ Pausar</button>
           <button class="sm" onclick="toggleEdit()" id="editBtn">✏️ Corrigir picks</button>
@@ -596,17 +734,20 @@
 
   <div class="card hidden" id="histCard">
     <div class="row between">
-      <h2 class="ttl">📜 Sequência das escolhas</h2>
-      <button class="sm plain" onclick="copyHist()" id="copyHistBtn">📋 Copiar sequência</button>
+      <h2 class="ttl"><span class="soDesktop">📜 Sequência das escolhas</span><span class="soCelular">📜 Sequência</span></h2>
+      <button class="sm plain" onclick="copyHist()" id="copyHistBtn">📋 <span class="soDesktop">Copiar sequência</span><span class="soCelular">Copiar</span></button>
     </div>
-    <p class="hint">Ordem exata em que cada capitão escolheu, do primeiro ao último pick.</p>
+    <p class="hint soDesktop">Ordem exata em que cada capitão escolheu, do primeiro ao último pick.</p>
     <div class="hist" id="histLog"></div>
   </div>
 
   <div class="card hidden" id="chatCard">
     <div class="row between">
       <h2 class="ttl">💬 Chat da torcida</h2>
-      <button class="sm plain hidden" id="chatToggle" onclick="toggleChat()"></button>
+      <div class="row">
+        <button class="sm plain hidden" id="chatToggle" onclick="toggleChat()"></button>
+        <button class="sm plain" id="chatFechar" onclick="abrirChat(false)">✕ fechar</button>
+      </div>
     </div>
     <p class="hint" id="chatHint">Zoeira liberada. Os capitães também leem — use com responsabilidade.</p>
     <div class="chatlog" id="chatLog"></div>
@@ -618,9 +759,23 @@
     <div class="err hidden" id="chatErr"></div>
   </div>
 
+  <div class="rodapeLinks" id="rodapeLinks">
+    <button onclick="mostraAuth()" id="authLink">🔑 sou capitão e troquei de celular</button>
+    <div id="authBox" class="hidden">
+      <p class="hint" style="margin-top:0">Digite a senha que o organizador mandou no privado.</p>
+      <div class="row">
+        <input id="authPw2" class="code" type="text" inputmode="numeric" maxlength="12" style="max-width:170px" placeholder="senha" autocomplete="off">
+        <button class="ok" onclick="doAuth('authPw2')">🔑 Entrar</button>
+      </div>
+      <div class="err hidden" id="authErr2"></div>
+    </div>
+  </div>
+
   <div class="ftr">Superliga · Futebol e Cerveja</div>
 </div>
 
+<div id="chatToast"></div>
+<button id="chatFab" class="hidden" onclick="abrirChat()" title="Chat da torcida">💬</button>
 <div class="conn wait" id="conn"><span class="led"></span><span id="connTxt">conectando…</span></div>
 
 <script>//---------------------------------------------------------------------
@@ -3066,9 +3221,16 @@ async function pullState(){
 function openWS(){
   if(ws){ try{ws.close();}catch(e){} ws=null; }
   setConn('wait','conectando…');
-  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat/ws`); }
+  /* `since` no reconectar e essencial: sem isso, tudo que passou enquanto o
+     WebSocket estava caido (iOS mata a conexao ao trocar de app) e perdido
+     pra sempre — foi o que fez o comentario do chat nunca aparecer. */
+  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat/ws?since=10m`); }
   catch(e){ setConn('off','sem sincronia'); return; }
-  ws.onopen = ()=>{ setConn('on','ao vivo'); if(pushQueue||pushPend){pushQueue=false;pushNow();} };
+  ws.onopen = ()=>{
+    setConn('on','ao vivo');
+    if(pushQueue||pushPend){pushQueue=false;pushNow();}
+    pullChat();     // rede de seguranca: puxa o que passou enquanto estava fora
+  };
   ws.onmessage = ev=>{
     try{
       const d=JSON.parse(ev.data);
@@ -3268,7 +3430,7 @@ function nextSlot(){
 function slotsFuturos(qtd){
   const eo=effOrder(), mortos=new Set(S.dead||[]), feitos=new Set((S.picks||[]).map(p=>p.s));
   const out=[]; let achouAtual=false;
-  for(let i=0;i<eo.length&&out.length<qtd+1;i++){
+  for(let i=0;i<eo.length&&out.length<qtd;i++){
     if(feitos.has(i)||mortos.has(i)) continue;
     if(!achouAtual){ achouAtual=true; continue; }
     out.push(eo[i]);
@@ -3336,7 +3498,7 @@ function show(id){
   document.getElementById('brand').classList.toggle('mini',id==='vDraft');
 }
 function route(){
-  try{ renderChat(); renderHist(); renderGone(); }catch(e){}
+  try{ renderChat(); renderHist(); renderGone(); renderRodape(); }catch(e){}
   if(!ME.room){ show('vLobby'); return; }
   if(S.phase!=='draft'){
     if(ME.role==='host'){ show('vSetup'); renderSetup(); }
@@ -3377,6 +3539,20 @@ async function doJoin(){
   }
   history.replaceState(null,'','?sala='+code);
   syncRole(); restauraAncora(); openWS(); saveLocal(); route(); pullChat();
+}
+
+function mostraAuth(){
+  const box=document.getElementById('authBox');
+  box.classList.toggle('hidden');
+  if(!box.classList.contains('hidden')) document.getElementById('authPw2').focus();
+}
+function renderRodape(){
+  const r=document.getElementById('rodapeLinks');
+  // so aparece pra quem esta numa sala, ainda nao e capitao, e com draft por rolar
+  const acabou = S.phase==='draft' && onClock()===null && (S.order||[]).length>0;
+  const faz = !!ME.room && ME.role==='view' && !acabou;
+  r.classList.toggle('hidden',!faz);
+  if(!faz) document.getElementById('authBox').classList.add('hidden');
 }
 
 async function doAuth(inputId){
@@ -3722,6 +3898,17 @@ function toggleReady(){
 
 /* ================= DRAFT ================= */
 let lastAdded=null, autoLock=false;
+let poolAberto=null;        // null = decide pelo papel; true/false = o usuario mandou
+let timesAbertos={};        // quais times o usuario abriu no celular
+function togglePool(){
+  poolAberto = !(poolAberto===null ? canAct()||editMode : poolAberto);
+  renderDraft();
+}
+function toggleTime(i){
+  if(window.innerWidth>940) return;      // no computador a lista fica sempre aberta
+  timesAbertos[i]=!timesAbertos[i];
+  renderDraft();
+}
 let minhaEscolha=null;    // o que EU deixei na mesa, pra avisar se não valeu
 let avisadoTurno='';      // pra vibrar/apitar uma vez por turno
 
@@ -3779,9 +3966,11 @@ function meuNome(){
 }
 function addChat(m){
   if(!m||!m.m||chatBuf.some(x=>x.k===m.k)) return;
+  const recente = !m.t || (Date.now()-m.t) < 60000;   // nao dispara toast pro historico antigo
   chatBuf.push(m);
   chatBuf.sort((a,b)=>(a.t||0)-(b.t||0));
   if(chatBuf.length>CHAT_MAX) chatBuf=chatBuf.slice(-CHAT_MAX);
+  if(recente && S.phase==='draft') { try{ mostraToast(m); }catch(e){} }
   renderChat();
 }
 async function pullChat(){
@@ -3819,6 +4008,7 @@ async function sendChat(){
   chatSent.push(agora); msgEl.value='';
   const pacote={k:ME.id.slice(0,4)+'-'+agora, id:ME.id, n:nome, m:txt, t:agora,
                 c:(ME.cap>=0?1:0), h:(ME.role==='host'?1:0)};
+  addChat(pacote);   // aparece na hora pra quem mandou; o eco do servidor e ignorado pela chave
   try{
     const r=await fetch(`https://${NTFY}/${topic()}-chat`,{method:'POST',body:JSON.stringify(pacote)});
     if(r.status===429){ chatCedeAVez(); throw new Error(429); }
@@ -3827,12 +4017,49 @@ async function sendChat(){
     err.textContent='Não consegui enviar. Tenta de novo em alguns segundos.'; err.classList.remove('hidden');
   }
 }
+let chatVisto=0, chatPainelAberto=false;
+const celular=()=>window.innerWidth<=940;
+
+function abrirChat(abrir){
+  chatPainelAberto = (abrir===undefined) ? !chatPainelAberto : !!abrir;
+  if(chatPainelAberto){ chatVisto=chatBuf.length; }
+  renderChat();
+  if(chatPainelAberto){
+    const c=document.getElementById('chatCard');
+    if(!celular()) c.scrollIntoView({behavior:'smooth',block:'center'});
+    const log=document.getElementById('chatLog'); if(log) log.scrollTop=log.scrollHeight;
+  }
+}
+/* aviso de mensagem nova: aparece 5s por cima do draft e some.
+   fica no historico, que abre pelo botao do chat. */
+function mostraToast(m){
+  const cx=document.getElementById('chatToast');
+  if(!cx || chatPainelAberto) return;
+  const d=document.createElement('div'); d.className='t';
+  const b=document.createElement('b'); b.textContent=(m.n||'?')+(m.h?' 🎩':(m.c?' ⚽':''));
+  d.appendChild(b); d.append(document.createTextNode(m.m));
+  cx.appendChild(d);
+  while(cx.children.length>3) cx.removeChild(cx.firstChild);
+  setTimeout(()=>{ d.classList.add('saindo'); setTimeout(()=>d.remove(),320); },5000);
+}
+
 function renderChat(){
   const card=document.getElementById('chatCard');
+  const fab=document.getElementById('chatFab');
   const naSala = !!ME.room && S.phase==='draft';
   const visivel = naSala && (S.chat!==0 || ME.role==='host');
-  card.classList.toggle('hidden',!visivel);
-  if(!visivel) return;
+  fab.classList.toggle('hidden',!visivel);
+  if(!visivel){ card.classList.add('hidden'); return; }
+  // no celular o painel e uma gaveta; no computador fica sempre na pagina
+  if(celular()){
+    card.classList.remove('hidden');
+    card.classList.toggle('fechado',!chatPainelAberto);
+  } else {
+    card.classList.remove('hidden','fechado');
+  }
+  const naoVistas=Math.max(0,chatBuf.length-chatVisto);
+  fab.innerHTML='💬'+(naoVistas&&!chatPainelAberto?'<span class="bolha">'+(naoVistas>9?'9+':naoVistas)+'</span>':'');
+  if(chatPainelAberto||!celular()) chatVisto=chatBuf.length;
 
   const tg=document.getElementById('chatToggle');
   tg.classList.toggle('hidden',ME.role!=='host');
@@ -3890,9 +4117,9 @@ function renderHist(){
     }
     const c=S.caps[pk.t]||{n:'?',k:'#999'};
     const d=document.createElement('div'); d.className='h';
-    d.innerHTML=`<span class="dot" style="background:${esc(normHex(c.k))}"></span>`+
-      `<span class="cap"></span><span class="arw">escolheu com a</span>`+
-      `<span class="np">${ordNum(capPickNo(i)-1)} pick</span><span class="pl"></span>`;
+    d.innerHTML=`<span class="np">${ordNum(capPickNo(i)-1)}<span class="soDesktop"> pick</span></span>`+
+      `<span class="dot" style="background:${esc(normHex(c.k))}"></span>`+
+      `<span class="cap"></span><span class="arw">escolheu</span><span class="pl"></span>`;
     d.querySelector('.cap').textContent=c.n;
     d.querySelector('.pl').textContent=pk.p;
     const marca = pk.fix?'ajustado':(pk.auto?'sorteado':'');
@@ -4045,7 +4272,7 @@ function reassumir(i){
 }
 function renderVolta(){
   const card=document.getElementById('voltaCard');
-  const mostrar = S.phase==='draft' && ME.role==='cap' && ME.cap<0;
+  const mostrar = S.phase==='draft' && ME.role==='cap' && ME.cap<0 && onClock()!==null;
   card.classList.toggle('hidden',!mostrar);
   if(!mostrar) return;
   const row=document.getElementById('voltaRow'); row.innerHTML='';
@@ -4093,7 +4320,10 @@ function conferMinhaEscolha(){
 
 function renderDraft(){
   const t=onClock(), done=t===null, caps=S.caps||[];
-  document.getElementById('viewNote').classList.toggle('hidden',ME.role!=='view');
+  // quem esta escolhendo ve a lista primeiro; os outros veem os times primeiro
+  const souAtor = canAct() || editMode;
+  document.body.classList.toggle('assistir', !souAtor);
+  document.body.classList.toggle('escolhendo', canAct() && !editMode && !done);
   document.getElementById('pickTotal').textContent=S.order.length;
   const totalRod=Math.max(1,Math.ceil(S.order.length/4));
   const slotAtual=nextSlot();
@@ -4102,6 +4332,7 @@ function renderDraft(){
   document.getElementById('roundNo').textContent=rodAtual;
   document.getElementById('pickNo').textContent=Math.min(S.picks.length+1,S.order.length);
   document.getElementById('pausedBox').classList.toggle('hidden',!S.paused||done);
+  document.getElementById('turnbar').classList.toggle('hidden',done);
   document.getElementById('doneBanner').classList.toggle('hidden',!done);
 
   const bar=document.getElementById('turnbar');
@@ -4122,12 +4353,13 @@ function renderDraft(){
     const sm=document.createElement('small'); sm.textContent='TIME '+teamLabel(t).toUpperCase();
     who.appendChild(sm);
     sw.style.background=hex;
-    const rest=slotsFuturos(3);
+    const compacto = window.innerWidth<=940;
+    const rest=slotsFuturos(compacto?2:4);
     const jaTem=S.picks.filter(x=>x.t===t).length;
-    const minha = `${jaTem+1}ª pick de ${c.n}`;
+    const minha = `${jaTem+1}ª pick`+(compacto?'':` de ${c.n}`);
     const primeiraDupla = rest[0]===t;
     let dbl='';
-    if(primeiraDupla) dbl='🔁 virada da serpente — escolhe duas seguidas · ';
+    if(primeiraDupla) dbl=(compacto?'🔁 pick duplo · ':'🔁 virada da serpente — escolhe duas seguidas · ');
     document.getElementById('upnext').innerHTML= minha+' · '+dbl+(rest.length
       ? 'depois: '+rest.map(i=>esc(caps[i].n)).join(' → ')
       : '⚡ último pick do draft!');
@@ -4151,6 +4383,8 @@ function renderDraft(){
     const pn=document.getElementById('provName');
     const has=S.prov&&S.prov.t===t;
     pn.textContent = has ? S.prov.p : 'nenhum jogador selecionado';
+    const rot=document.getElementById('provRot');
+    if(rot) rot.textContent = has ? 'escolhido — confirme pra valer' : 'toque num jogador da lista';
     pn.className = has ? 'n' : 'n none';
     document.getElementById('confirmBtn').disabled=!has;
     document.getElementById('clearProvBtn').disabled=!has;
@@ -4168,19 +4402,27 @@ function renderDraft(){
     lock.classList.remove('hidden');
     if(canAct()){
       const semSinal = connState==='off';
-      lock.className='locked';
-      lock.textContent = (ME.role==='host'&&ME.cap!==t)
-        ? `🎩 Você é o organizador — pode escolher por ${caps[t].n}.`
-        : '⚡ Sua vez! Toca no jogador, depois confirme.';
+      const organizadorPorOutro = ME.role==='host' && ME.cap!==t;
       if(semSinal){
-        lock.className='locked';
+        lock.classList.remove('hidden'); lock.className='locked';
         lock.style.background='var(--red)'; lock.style.color='#fff';
         lock.textContent='📵 SEM SINAL NA SUA VEZ — sua escolha pode não chegar. Confira a internet antes de confirmar.';
-      } else { lock.style.background=''; lock.style.color=''; }
+      } else if(organizadorPorOutro){
+        lock.classList.remove('hidden'); lock.className='locked';
+        lock.style.background=''; lock.style.color='';
+        lock.textContent=`🎩 Você é o organizador — pode escolher por ${caps[t].n}.`;
+      } else {
+        // a barra da vez ja avisa "é a sua vez"; repetir aqui custava 63px de tela
+        lock.classList.add('hidden'); lock.style.background=''; lock.style.color='';
+      }
+    }else if(S.prov&&S.prov.p){
+      // isso a barra da vez nao mostra, entao vale o espaco
+      lock.classList.remove('hidden'); lock.className='locked wait';
+      lock.style.background=''; lock.style.color='';
+      lock.textContent=`⏳ ${caps[t].n} colocou ${S.prov.p} em cima da mesa — ainda pode trocar.`;
     }else{
-      lock.className='locked wait';
-      const pv=S.prov&&S.prov.p ? ` Já colocou ${S.prov.p} em cima da mesa.` : '';
-      lock.textContent=(ME.role==='view'?'👀 Vez de ':'🔒 Vez de ')+caps[t].n+'.'+pv;
+      // "vez de vilas" ja esta escrito grande na barra de cima
+      lock.classList.add('hidden');
     }
   }
 
@@ -4189,6 +4431,17 @@ function renderDraft(){
   const q=document.getElementById('search').value.trim().toLowerCase();
   const shown=q?avail.filter(n=>n.toLowerCase().includes(q)):avail;
   document.getElementById('poolTitle').textContent=`Disponíveis (${avail.length})`;
+  /* Acabou o draft: a lista de disponiveis esta vazia e a grade de times
+     repete o resumo final. Some com as duas — o organizador recupera a lista
+     ao entrar no modo correcao. */
+  document.getElementById('colPool').classList.toggle('hidden', done && !editMode);
+  document.getElementById('teams').classList.toggle('hidden', done);
+
+  const abrirLista = poolAberto===null ? souAtor : poolAberto;
+  document.getElementById('poolHead').classList.toggle('fechado',!abrirLista);
+  document.getElementById('poolBody').classList.toggle('escondido',!abrirLista);
+  document.getElementById('poolSeta').textContent = abrirLista ? '▾' : '▸';
+
   const pool=document.getElementById('pool'); pool.innerHTML='';
   if(!avail.length && !S.prov && !done){
     pool.innerHTML='<div class="empty">⚠️ Acabaram os jogadores disponíveis mas ainda falta pick.<br>'+
@@ -4219,11 +4472,13 @@ function renderDraft(){
   caps.forEach((c,i)=>{
     const hex=normHex(c.k), list=roster(i);
     const provHere = S.prov&&S.prov.t===i ? S.prov.p : null;
-    const d=document.createElement('div'); d.className='team'+(i===t?' on':'');
+    const aberto = window.innerWidth>940 ? true : !!timesAbertos[i];
+    const d=document.createElement('div'); d.className='team'+(i===t?' on':'')+(aberto?' aberto':'');
     const head=document.createElement('div'); head.className='head';
     head.innerHTML=`<div class="tn"><span class="dot" style="background:${esc(hex)}"></span>`+
-      `${esc(teamLabel(i).toUpperCase())}<span class="qtd">${list.length+1} jog.</span></div><div class="cap"></div>`;
+      `${esc(teamLabel(i).toUpperCase())}<span class="qtd">${list.length+1} jog. ${window.innerWidth>940?'':(aberto?'▾':'▸')}</span></div><div class="cap"></div>`;
     head.querySelector('.cap').textContent='C: '+c.n;
+    head.onclick=()=>toggleTime(i);
     const ol=document.createElement('ol');
     const cl=document.createElement('li'); cl.innerHTML='<span class="n">C</span>';
     cl.append(document.createTextNode(c.n)); ol.appendChild(cl);
@@ -4252,6 +4507,9 @@ function renderDraft(){
   });
 
   const soHost = ME.role!=='host';
+  // quem só assiste não precisa da fileira de botões; e no fim o resumo já tem "copiar tudo"
+  document.getElementById('draftCtrls').classList.toggle('hidden', soHost);
+  document.getElementById('copyBtn').classList.toggle('hidden', done);
   ['undoBtn','resetBtn','editBtn','pauseBtn'].forEach(id=>document.getElementById(id).classList.toggle('hidden',soHost));
   const pb2=document.getElementById('pauseBtn');
   pb2.textContent = S.paused ? '▶️ Retomar' : '⏸ Pausar';
@@ -4424,9 +4682,13 @@ function toggleExport(){
     if(document.visibilityState==='visible'&&ME.room){
       if(!ws||ws.readyState>1) openWS();
       pullState().then(st=>{ if(st) merge(st); try{ tickClock(); tentaResolver(); }catch(e){} });
+      pullChat();
     }
   });
   window.addEventListener('online',()=>{ if(ME.room) openWS(); });
+  let redimTimer=null;
+  window.addEventListener('resize',()=>{ clearTimeout(redimTimer);
+    redimTimer=setTimeout(()=>{ if(S.phase==='draft') route(); },200); });
 })();
 </script>
 </body>
