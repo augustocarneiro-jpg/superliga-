@@ -138,9 +138,27 @@
   input[type=color]{width:34px;height:34px;padding:0;border:2.5px solid var(--ink);border-radius:8px;background:none;cursor:pointer}
   input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
   input[type=color]::-webkit-color-swatch{border:none;border-radius:5px}
-  .palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-  .palette .sw{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--ink);cursor:pointer;box-shadow:none;padding:0}
-  .palette .sw.taken{opacity:.25;cursor:not-allowed}
+  /* as 6 cores oficiais: chip com o nome dentro, pra ninguem discutir tom */
+  .palette{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+  .palette .sw{
+    width:auto;height:auto;flex:0 0 auto;padding:11px 16px;border-radius:999px;
+    border:2.5px solid var(--ink);box-shadow:var(--sh-sm);cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;min-width:96px
+  }
+  .palette .sw .cn{font-family:'Anton',sans-serif;font-size:.84rem;letter-spacing:.07em;text-transform:uppercase;pointer-events:none}
+  .palette .sw .ordem{
+    font-family:'Anton',sans-serif;font-size:.72rem;line-height:1;
+    border:2px solid;border-radius:999px;padding:3px 6px;margin-right:7px;pointer-events:none
+  }
+  .palette .sw:active{transform:translate(2px,2px);box-shadow:none}
+  .palette .sw.taken{opacity:.32;cursor:not-allowed;box-shadow:none;transform:none}
+  .palette .sw.taken .cn{text-decoration:line-through}
+  .palette .sw.mine{outline:3px solid var(--ink);outline-offset:3px}
+  .escolhePapel{margin-top:14px;padding-top:14px;border-top:2px dashed rgba(27,42,32,.25)}
+  @media(max-width:940px){
+    .palette{gap:8px}
+    .palette .sw{flex:1 1 calc(50% - 8px);min-width:0;padding:12px 8px}
+  }
 
   /* barra da vez + cronometro */
   .turnbar{
@@ -157,6 +175,15 @@
   }
   .turnbar .who small{font-size:.64rem;letter-spacing:.09em;opacity:.8;display:block;font-family:'Nunito';font-weight:700}
   .tb-meta{display:flex;align-items:baseline;gap:9px;margin-top:8px;flex-wrap:wrap}
+  /* quanta gente esta vendo o draft ao vivo */
+  .platea{
+    margin-left:auto;flex:none;background:rgba(247,232,198,.14);color:var(--gold-2);
+    border:2px solid rgba(247,232,198,.32);border-radius:999px;padding:3px 11px;
+    font-family:'Anton',sans-serif;font-size:.78rem;letter-spacing:.06em;
+    box-shadow:none;cursor:pointer;line-height:1.5
+  }
+  .platea:active{transform:translateY(1px)}
+  .platea.hidden{display:none}
   .turnbar .pk{font-family:'Anton',sans-serif;font-size:.82rem;letter-spacing:.04em;color:var(--gold-2);flex:none}
   .turnbar .next{font-size:.72rem;opacity:.8;font-weight:600;line-height:1.35}
   .turnbar.mine{background:#17361f;box-shadow:0 0 0 3px var(--gold),var(--sh)}
@@ -167,6 +194,20 @@
   .clock.warn{color:#FFB4B0;animation:pulse .8s infinite}
   @keyframes pulse{50%{opacity:.45}}
   .bar{height:7px;background:rgba(247,232,198,.18);border-radius:999px;margin-top:9px;overflow:hidden}
+  /* barra de tempo da escolha de cores, em fundo claro */
+  .relogio{font-family:'Anton',sans-serif;font-size:1.9rem;line-height:1;color:var(--ink)}
+  .relogio.mini2{font-size:.95rem;letter-spacing:.05em}
+  .relogio.warn{color:var(--red)}
+  .barc{height:8px;background:rgba(27,42,32,.14);border-radius:999px;margin:10px 0 4px;overflow:hidden}
+  .barc i{display:block;height:100%;background:var(--gold);transition:width .3s linear}
+  .barc i.warn{background:var(--red)}
+  .palette .sw.escolhida{outline:3px solid var(--ink);outline-offset:3px}
+  .palette .sw.perdeu{opacity:.35;box-shadow:none}
+  .rev{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:2px dashed rgba(27,42,32,.18);font-weight:700;font-size:.92rem}
+  .rev:last-child{border-bottom:none}
+  .rev .bol{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--ink);flex:none}
+  .rev.perdeu{opacity:.65}
+  .rev b{font-family:'Anton',sans-serif;letter-spacing:.04em}
   .bar i{display:block;height:100%;background:var(--gold);border-radius:999px;transition:width .25s linear}
   .bar i.warn{background:var(--red)}
   .yourturn{
@@ -529,6 +570,18 @@
         <div class="row between" style="margin-top:10px">
           <span class="count" id="capsCount">0 capitães</span>
         </div>
+        <div class="escolhePapel">
+          <p class="hint" style="margin:0 0 8px">E você, joga ou só comanda?</p>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            <button class="sm" id="btnHostJoga" onclick="setHostOnly(0)">🎽 Sou capitão também</button>
+            <button class="sm" id="btnHostSo" onclick="setHostOnly(1)">🎩 Só organizo</button>
+          </div>
+          <div class="hidden" id="hostNomeBox" style="margin-top:10px">
+            <p class="hint" style="margin:0 0 6px">Como você aparece pro pessoal (no chat e na lista de quem está ao vivo):</p>
+            <input id="hostNome" type="text" maxlength="14" placeholder="seu apelido" autocomplete="off" style="max-width:190px">
+          </div>
+          <p class="hint" id="papelNota" style="margin:8px 0 0"></p>
+        </div>
       </div>
       <div class="card">
         <h2 class="ttl">② Jogadores do draft</h2>
@@ -575,7 +628,7 @@
         <h2 class="ttl">⑤ Sala de espera</h2>
         <span class="count" id="readyCount">0 de 4 prontos</span>
       </div>
-      <p class="hint">Toque em <b>sou eu</b> no seu nome. Os outros três aparecem aqui quando entrarem.</p>
+      <p class="hint" id="esperaHint">Toque em <b>sou eu</b> no seu nome. Os outros três aparecem aqui quando entrarem.</p>
       <div id="capsPrev" class="caps"></div>
       <div class="warn hidden" id="setupWarn"></div>
       <div class="err hidden" id="setupProb" style="line-height:1.6"></div>
@@ -613,13 +666,8 @@
     </div>
 
     <div class="card hidden" id="myCard">
-      <h2 class="ttl">Cor do seu time</h2>
+      <h2 class="ttl">Você está dentro</h2>
       <p class="hint" id="myTeamName">—</p>
-      <div class="row">
-        <input type="color" id="myColor" value="#E9A93B">
-        <span class="count" id="myColorName">—</span>
-      </div>
-      <div class="palette" id="myPalette"></div>
       <div class="warn hidden" id="colorClash"></div>
       <div style="margin-top:16px">
         <button class="ok block" id="readyBtn" onclick="toggleReady()">✅ Estou pronto</button>
@@ -635,6 +683,31 @@
         <li>Se o minuto acabar sem confirmar, o provisório é confirmado sozinho. <b>Sem nada escolhido, o app sorteia</b> um jogador pra você.</li>
         <li>O draft é <b>serpente</b>: quem escolhe por último na rodada escolhe duas vezes seguidas — são <b>duas vezes separadas, 1 minuto cada</b>. Não escolheu nenhuma, saem dois sorteados; escolheu só uma, entra a sua e a outra é sorteada.</li>
       </ol>
+    </div>
+  </section>
+
+  <!-- ============ ESCOLHA DAS CORES (às cegas) ============ -->
+  <section id="vCores" class="hidden">
+    <div class="card" id="coresCard">
+      <div class="row between" style="align-items:center">
+        <h2 class="ttl">👕 Cor da camisa</h2>
+        <span class="relogio" id="coresClock">0:25</span>
+      </div>
+      <div class="barc"><i id="coresBar" style="width:100%"></i></div>
+      <div class="palette" id="coresPal"></div>
+      <p class="hint" id="coresStatus" style="margin-top:12px"></p>
+      <button class="sm hidden" id="limpaCores" onclick="limpaCores()">↩ Limpar minha ordem</button>
+      <p class="hint" id="coresHint" style="margin:10px 0 0;opacity:.75">Todos montam a lista ao mesmo tempo e ninguém vê a do outro. Caiu dois na mesma cor, sai sorteio — e quem perder desce pra própria 2ª preferência.</p>
+    </div>
+
+    <div class="card hidden" id="revelaCard">
+      <h2 class="ttl" id="revelaTtl">🎲 Deu isso</h2>
+      <div id="revelaLista"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="ttl">Como estão os times</h2>
+      <div id="coresCaps" class="caps"></div>
     </div>
   </section>
 
@@ -687,6 +760,7 @@
       <div class="tb-meta">
         <span class="pk">R<span id="roundNo">1</span> · pick <span id="pickNo">1</span>/<span id="pickTotal">20</span></span>
         <span class="next" id="upnext"></span>
+        <button class="platea" id="platea" onclick="quemAoVivo()" title="toque pra ver quem está">👀 1 ao vivo</button>
       </div>
       <div id="turnMine" class="yourturn hidden">⚡ é a sua vez — toque num jogador</div>
     </div>
@@ -779,7 +853,7 @@
 
 <div id="chatToast"></div>
 <button id="chatFab" class="hidden" onclick="abrirChat()" title="Chat da torcida">💬</button>
-<div class="conn wait" id="conn"><span class="led"></span><span id="connTxt">conectando…</span></div>
+<div class="conn wait" id="conn" onclick="quemAoVivo()"><span class="led"></span><span id="connTxt">conectando…</span></div>
 
 <script>//---------------------------------------------------------------------
 //
@@ -3090,7 +3164,42 @@ const NAMED = [
   ['Roxo','#7C4DBE'],['Azul','#2E6FD8'],['Marinho','#1E3A6E'],['Celeste','#5FB8EE'],
   ['Ciano','#26B3A6'],['Verde','#2FA84F'],['Limão','#8CC63F'],['Musgo','#4A6B33'],['Marrom','#8A5A34']
 ];
-const QUICK = ['#FFFFFF','#F2C230','#D33A34','#111111','#2E6FD8','#2FA84F','#EE7B2B','#9AA0A6','#7C4DBE','#5FB8EE'];
+/* As 6 cores oficiais. Uma por capitao, sem repetir: acabou a discussao de
+   "azul escuro x azul claro" na hora de cada um pegar a propria camisa. */
+const CORES = [
+  ['Preto',   '#171717'],
+  ['Branco',  '#F4F1E8'],
+  ['Azul',    '#1F63C8'],
+  ['Vermelho','#C6302C'],
+  ['Amarelo', '#EFC021'],
+  ['Verde',   '#2E9C46']
+];
+const SEM_COR = '#B4AC98';
+/* Exato primeiro; se nao bater (sala criada na versao antiga, que deixava
+   escolher qualquer cor), aproxima pela mais parecida. Vazio = ainda nao escolheu. */
+function corIdx(hex){
+  hex=String(hex||'').trim();
+  if(!/^#[0-9a-fA-F]{3,6}$/.test(hex)) return -1;
+  const h=normHex(hex).toUpperCase();
+  const i=CORES.findIndex(c=>c[1].toUpperCase()===h);
+  if(i>=0) return i;
+  let melhor=-1,d=Infinity;
+  CORES.forEach((c,j)=>{ const x=colorDist(h,c[1]); if(x<d){d=x;melhor=j;} });
+  return melhor;
+}
+const temCor = c => corIdx(c&&c.k)>=0;
+/* claro ou escuro? decide se o nome dentro do chip vai preto ou branco */
+function luzDe(hex){
+  const [r,g,b]=hex2rgb(normHex(hex));
+  return (0.2126*r+0.7152*g+0.0722*b)/255;
+}
+const hexTime = c => { const i=corIdx(c&&c.k); return i>=0?CORES[i][1]:SEM_COR; };
+const nomeCor = c => { const i=corIdx(c&&c.k); return i>=0?CORES[i][0]:''; };
+/* qual capitao ja pegou esta cor (fora o indice `menos`) */
+function donoDaCor(idx,menos){
+  return (S.caps||[]).findIndex((c,j)=>j!==menos&&corIdx(c.k)===idx);
+}
+function coresLivres(menos){ return CORES.map((_,i)=>i).filter(i=>donoDaCor(i,menos)<0); }
 function hex2rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');
   return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
 function rgb2lab(r,g,b){
@@ -3115,10 +3224,19 @@ function normHex(h){
   if(/^#[0-9a-fA-F]{3}$/.test(h)) return '#'+h.slice(1).split('').map(c=>c+c).join('');
   return '#E9A93B';
 }
+/* quem esta no comando, seja ele capitao ou nao */
+function quemOrganiza(){
+  const c=(S.caps||[]).find(x=>x.by&&x.by===S.host);
+  if(c) return c.n;
+  const n=String(S.hostName||'').trim();
+  return n || 'o organizador';
+}
 function teamLabel(i){
   const c=(S.caps||[])[i]; if(!c) return '';
-  const nm=colorName(normHex(c.k));
-  const dup=(S.caps||[]).some((o,j)=>j!==i&&colorName(normHex(o.k))===nm);
+  const nm=nomeCor(c);
+  if(!nm) return String(c.n||'').split(' ')[0];
+  /* com as 6 cores exclusivas isso nunca deveria acontecer; fica de rede */
+  const dup=(S.caps||[]).some((o,j)=>j!==i&&nomeCor(o)===nm);
   return dup ? nm+' · '+String(c.n||'').split(' ')[0] : nm;
 }
 
@@ -3126,7 +3244,8 @@ function teamLabel(i){
 const TURN_SEC = 60;
 
 function blank(){
-  return { v:0, ts:0, by:'', host:'', pwh:'', phase:'setup', chat:1,
+  return { v:0, ts:0, by:'', host:'', pwh:'', phase:'setup', chat:1, hostOnly:0,
+           crod:0, crev:[], crfim:0,
            caps:[], players:[], picks:[], order:[], extra:[], dead:[],
            sorteio:[], nSorteios:0, prov:null, clock:0, paused:0, left:0 };
 }
@@ -3190,13 +3309,23 @@ function roomCode(){
 const NTFY='ntfy.sh';
 let ws=null, wsTimer=null, connState='wait', pushQueue=false, pushTimer=null;
 function topic(){ return 'slg-draft-'+ME.room.toLowerCase(); }
+let connTexto='conectando…';
 function setConn(st,txt){
   connState=st;
+  if(txt!==undefined) connTexto=txt;
   const el=document.getElementById('conn');
   el.className='conn '+st;
   /* na tela de entrada nao ha sala nenhuma: a pastilha so cobriria o campo do codigo */
   el.style.display = ME.room ? '' : 'none';
-  document.getElementById('connTxt').innerHTML = txt + (ME.room?` · <span class="room">${ME.room}</span>`:'');
+  let t=connTexto;
+  /* durante o draft o espaço vale mais mostrando quanta gente esta acompanhando */
+  if(st==='on' && S.phase==='draft'){
+    const v=textoAoVivo();
+    t=`👀 ${v.n} ao vivo`;
+    el.title=v.nomes;
+    el.style.cursor='pointer';
+  } else { el.title=''; el.style.cursor=''; }
+  document.getElementById('connTxt').innerHTML = t + (ME.room?` · <span class="room">${ME.room}</span>`:'');
 }
 /* Ordem total do estado: versão, depois carimbo, depois id do aparelho.
    Sem o id, dois aparelhos empatados em (v,ts) recusam um ao outro pra sempre. */
@@ -3230,19 +3359,21 @@ function openWS(){
   /* `since` no reconectar e essencial: sem isso, tudo que passou enquanto o
      WebSocket estava caido (iOS mata a conexao ao trocar de app) e perdido
      pra sempre — foi o que fez o comentario do chat nunca aparecer. */
-  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat/ws?since=10m`); }
+  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat,${topic()}-cor/ws?since=10m`); }
   catch(e){ setConn('off','sem sincronia'); return; }
   ws.onopen = ()=>{
     setConn('on','ao vivo');
     if(pushQueue||pushPend){pushQueue=false;pushNow();}
     pullChat();     // rede de seguranca: puxa o que passou enquanto estava fora
+    pullCores();
   };
   ws.onmessage = ev=>{
     try{
       const d=JSON.parse(ev.data);
       if(d.event!=='message'||!d.message) return;
-      if(d.topic===topic()+'-hb'){ if(d.message===S.host) hostSeen=Date.now(); return; }
+      if(d.topic===topic()+'-hb'){ notaPresenca(d.message,d.time); return; }
       if(d.topic===topic()+'-chat'){ addChat(JSON.parse(d.message)); return; }
+      if(d.topic===topic()+'-cor'){ anotaEscolha(d.message); return; }
       merge(JSON.parse(d.message));
     }catch(e){}
   };
@@ -3251,24 +3382,85 @@ function openWS(){
 }
 function retry(){ clearTimeout(wsTimer); wsTimer=setTimeout(openWS,4000); }
 
-/* --- presença do organizador --- */
+/* ============ QUEM ESTA AO VIVO ============
+   Todo aparelho com o draft aberto e a tela acesa manda um batimento a cada 50s.
+   Serve pra duas coisas: saber que o organizador esta de pé (era o uso antigo) e
+   contar quanta gente esta acompanhando.
+
+   A frescura NAO usa o relogio local: o ntfy carimba cada mensagem com o horario
+   DELE (campo `time`), e comparamos os batimentos entre si — o mais novo que
+   chegou define o "agora". Assim relogio errado de celular nao inventa gente, e
+   a repeticao que o ntfy manda ao reconectar (`since=10m`) nao conta duas vezes
+   nem ressuscita quem ja saiu.
+
+   Custo: ~30 mensagens por pessoa num draft de 25 min, contra ~250 por rede
+   por dia. Só bate durante o draft e com a tela acesa. */
+const HOST_TIMEOUT=180000;
+const PRES_TTL=155;                  // segundos de tolerancia (3 batimentos)
+const PING_MS=50000;
 let hostSeen=Date.now();
-/* O batimento gastava 3 mensagens por minuto SEM PARAR, o que estourava a cota
-   diaria do servico gratuito em poucas horas de sala aberta. Agora ele só bate
-   durante o draft, com a tela acesa, a cada 45s. */
-const HOST_TIMEOUT=150000;
+/* id -> {t: horario do servidor, l: quando chegou aqui, n: nome, r: papel} */
+let presencas=new Map();
+
+function notaPresenca(msg,tsrv){
+  let d=null;
+  try{ d=JSON.parse(msg); }catch(e){ d=null; }
+  /* versao antiga mandava só o id cru; continua valendo como presenca */
+  if(!d||typeof d!=='object') d={i:String(msg||'')};
+  if(!d.i) return;
+  const t=Number(tsrv)||0;
+  if(d.i===S.host) hostSeen=Date.now();
+  const ja=presencas.get(d.i);
+  if(!ja || t>=ja.t) presencas.set(d.i,{t, l:Date.now(), n:String(d.n||'').slice(0,14), r:String(d.r||'')});
+}
 function hostGone(){
   return !!S.host && S.host!==ME.id && (Date.now()-hostSeen)>HOST_TIMEOUT;
 }
+/* Dois filtros, cada um cobrindo o furo do outro:
+   - relogio DAQUI: batimento que nao chega mais expira, ninguem fica eterno;
+   - relogio do SERVIDOR: a repeticao do reconectar chega "nova" pra mim mas
+     vem com carimbo velho, então nao ressuscita quem ja saiu.
+   Eu sempre conto — sei que estou aqui sem precisar de mensagem. */
+function aoVivo(){
+  const agora=Date.now();
+  for(const [id,v] of presencas) if(agora-v.l > PRES_TTL*1000) presencas.delete(id);
+  let mx=0;
+  for(const [,v] of presencas) if(v.t>mx) mx=v.t;
+  const corte=mx-PRES_TTL;
+  const out=[{id:ME.id, n:meuNome(), r:ME.role, eu:true}];
+  for(const [id,v] of presencas){
+    if(id===ME.id) continue;
+    if(v.t>=corte) out.push({id, n:v.n, r:v.r, eu:false});
+  }
+  return out;
+}
+function renderPlateia(){
+  const el=document.getElementById('platea'); if(!el) return;
+  const v=textoAoVivo();
+  el.textContent='👀 '+v.n+' ao vivo';
+  el.title=v.nomes;
+}
+function textoAoVivo(){
+  const v=aoVivo();
+  const caps=v.filter(x=>x.r==='cap'||x.r==='host').length;
+  const nomes=v.map(x=>(x.n||'alguém')+(x.eu?' (você)':'')).join(', ');
+  return {n:v.length, caps, torcida:Math.max(0,v.length-caps), nomes};
+}
+function quemAoVivo(){
+  const t=textoAoVivo();
+  flash(`👀 ${t.n} ao vivo — ${t.nomes}`, 5200);
+}
 setInterval(()=>{
-  if(!ME.room || ME.role!=='host') return;
-  hostSeen=Date.now();
+  if(!ME.room) return;
+  if(ME.role==='host') hostSeen=Date.now();
   if(S.phase!=='draft') return;                       // na sala de espera nao precisa
   if(onClock()===null) return;                        // draft acabou
-  if(document.visibilityState!=='visible') return;    // tela apagada nao precisa avisar nada
+  if(document.visibilityState!=='visible') return;    // tela apagada nao gasta mensagem
+  if(cotaEstourada) return;                           // sem cota, batimento e o primeiro a ceder
   contaMsg();
-  fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:ME.id}).catch(()=>{});
-},45000);
+  const corpo=JSON.stringify({i:ME.id, n:String(meuNome()||'').slice(0,14), r:ME.role});
+  fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:corpo}).catch(()=>{});
+},PING_MS);
 
 /* O ntfy corta em 4096 bytes — acima disso ele transforma a mensagem em anexo,
    devolve 200 e o assinante recebe um texto que não é JSON. Ou seja: quebraria
@@ -3305,7 +3497,7 @@ function contaMsg(){
   if(n>=LIMITE_PERIGO && avisouCota<2){ avisouCota=2;
     flash(`⚠️ ${n} mensagens hoje nesta rede — o limite gratuito está no fim. Se travar, use o 4G do celular.`); }
   else if(n>=LIMITE_AVISO && avisouCota<1){ avisouCota=1;
-    flash(`📊 ${n} mensagens hoje nesta rede (limite ~250). Um draft gasta ~15, então isso vem de sala aberta há muito tempo.`); }
+    flash(`📊 ${n} mensagens hoje nesta rede (limite ~250). Um draft inteiro gasta ~45, então isso vem de sala aberta há muito tempo.`); }
 }
 function msgsHoje(){
   try{ return parseInt(localStorage.getItem('slg_cota_'+hojeStr())||'0',10); }catch(e){ return 0; }
@@ -3360,7 +3552,7 @@ function agendaReenvio(){
 function schedulePush(){ clearTimeout(pushTimer); pushTimer=setTimeout(pushNow,600); }
 
 let flashTimer=null;
-function flash(msg){
+function flash(msg,dur){
   let el=document.getElementById('flash');
   if(!el){
     el=document.createElement('div'); el.id='flash';
@@ -3371,7 +3563,7 @@ function flash(msg){
     document.body.appendChild(el);
   }
   el.textContent=msg; el.style.display='block';
-  clearTimeout(flashTimer); flashTimer=setTimeout(()=>{el.style.display='none';},7000);
+  clearTimeout(flashTimer); flashTimer=setTimeout(()=>{el.style.display='none';},dur||7000);
 }
 
 function syncRole(){
@@ -3402,7 +3594,9 @@ function merge(inc){
   }
   if(inc.by===inc.host) hostSeen=Date.now();
   const comecou = S.phase!=='draft' && inc.phase==='draft';
-  const sorteioNovo = (inc.nSorteios||0) > (S.nSorteios||0);
+  /* durante a disputa de cores o aviso da ordem so atrapalharia: ele volta
+     quando o draft comeca de verdade */
+  const sorteioNovo = (inc.nSorteios||0) > (S.nSorteios||0) && inc.phase==='draft';
   S=inc; syncRole(); saveLocal(); route();
   if(comecou||sorteioNovo){
     try{ flash('🎲 Ordem sorteada: '+textoOrdem()); }catch(e){}
@@ -3564,14 +3758,15 @@ function estouradoHa(){
 
 /* ================= TELAS ================= */
 function show(id){
-  ['vLobby','vSetup','vLounge','vDraft'].forEach(v=>{
+  ['vLobby','vSetup','vLounge','vCores','vDraft'].forEach(v=>{
     document.getElementById(v).classList.toggle('hidden',v!==id);
   });
-  document.getElementById('brand').classList.toggle('mini',id==='vDraft');
+  document.getElementById('brand').classList.toggle('mini',id==='vDraft'||id==='vCores');
 }
 function route(){
   try{ renderChat(); renderHist(); renderGone(); renderRodape(); }catch(e){}
   if(!ME.room){ show('vLobby'); return; }
+  if(S.phase==='cores'){ show('vCores'); renderCores(); return; }
   if(S.phase!=='draft'){
     if(ME.role==='host'){ show('vSetup'); renderSetup(); }
     else { show('vLounge'); renderLounge(); }
@@ -3655,7 +3850,7 @@ function onSetupInput(){
       const old=st.caps||[];
       st.caps=caps.map((n,i)=>{
         const prev=old.find(c=>c.n.toLowerCase()===n.toLowerCase())||old[i]||{};
-        return { n, k:normHex(prev.k||QUICK[i%QUICK.length]), by:prev.by||'', ready:!!prev.ready };
+        return { n, k:prev.k||'', by:prev.by||'', ready:!!prev.ready };
       });
       st.players=pls;
     });
@@ -3718,20 +3913,18 @@ function renderSetup(){
 
   const box=document.getElementById('capsPrev'); box.innerHTML='';
   caps.forEach((c,i)=>{
-    const hex=normHex(c.k), mine=c.by===ME.id;
+    const hex=hexTime(c), mine=c.by===ME.id;
     const d=document.createElement('div');
     d.className='cap-row'+(mine?' me':'');
     d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
-      `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
+      `<span><span class="nm"></span><br><span class="tm">${nomeCor(c)?'Time '+esc(nomeCor(c)):'ainda sem cor'}</span></span>`+
       `<span class="sp"></span>`;
     d.querySelector('.nm').textContent=c.n;
     const sp=d.querySelector('.sp');
 
     if(mine){
       const b=document.createElement('span'); b.className='bdg boss'; b.textContent='você · organizador'; sp.appendChild(b);
-      const ci=document.createElement('input'); ci.type='color'; ci.value=hex;
-      ci.oninput=()=>commit(st=>{st.caps[i].k=ci.value;},true);
-      sp.appendChild(ci);
+      /* a cor agora sai da paleta oficial, logo abaixo */
     } else if(c.by){
       const b=document.createElement('span');
       b.className='bdg '+(c.ready?'ready':'in');
@@ -3747,7 +3940,7 @@ function renderSetup(){
       sp.appendChild(x);
     } else {
       const b=document.createElement('span'); b.className='bdg wait'; b.textContent='aguardando'; sp.appendChild(b);
-      if(ME.cap<0){
+      if(ME.cap<0 && !S.hostOnly){
         const s=document.createElement('button'); s.className='sm'; s.textContent='sou eu';
         s.onclick=()=>hostClaim(i);
         sp.appendChild(s);
@@ -3755,6 +3948,23 @@ function renderSetup(){
     }
     box.appendChild(d);
   });
+
+  /* organizador: joga ou só comanda */
+  const so=!!S.hostOnly;
+  document.getElementById('btnHostJoga').className='sm'+(so?'':' ok');
+  document.getElementById('btnHostSo').className='sm'+(so?' ok':'');
+  document.getElementById('hostNomeBox').classList.toggle('hidden',!so);
+  const hn=document.getElementById('hostNome');
+  if(so && document.activeElement!==hn && hn.value.trim()==='' && (S.hostName||'')) hn.value=S.hostName;
+  document.getElementById('papelNota').textContent = so
+    ? 'Você fica de fora dos times: os 4 lugares são pra outros. Continua com o comando total do draft — escolhe por quem cair, pausa, corrige.'
+    : (ME.cap>=0 ? 'Você pegou um time. A cor da camisa é disputada depois, junto com os outros capitães.'
+                 : 'Toque em "sou eu" no seu nome na lista abaixo pra pegar um time.');
+
+  const eh=document.getElementById('esperaHint');
+  if(eh) eh.innerHTML = so
+    ? 'Os 4 lugares são pros capitães. Cada um entra com a senha, diz quem é, pega uma cor e marca <b>Pronto</b>.'
+    : 'Toque em <b>sou eu</b> no seu nome. Os outros três aparecem aqui quando entrarem.';
 
   const w=document.getElementById('setupWarn'); const clash=findClash();
   w.classList.toggle('hidden',!clash);
@@ -3782,7 +3992,22 @@ function renderSetup(){
   else msg=`Tudo pronto: ${nPls} jogadores · ${rounds} rodada${rounds>1?'s':''} · times de ${1+base}${rest?' a '+(2+base):''}. 🎲 A ordem de escolha é sorteada agora, ao apertar Iniciar.`;
   document.getElementById('setupSummary').textContent=msg;
 }
+function setHostOnly(v){
+  v=v?1:0;
+  if(v && ME.cap>=0){
+    const i=ME.cap; ME.cap=-1;
+    commit(st=>{ st.hostOnly=1; if(st.caps[i]){st.caps[i].by='';st.caps[i].ready=false;st.caps[i].k='';st.caps[i].kt=0;} });
+  } else {
+    commit(st=>{ st.hostOnly=v; });
+  }
+}
+document.getElementById('hostNome').addEventListener('input',e=>{
+  const n=(e.target.value||'').trim().slice(0,14);
+  LS('slg_name',n);
+  commit(st=>{ st.hostName=n; },true);
+});
 function hostClaim(i){
+  if(S.hostOnly) return;
   ME.cap=i;
   commit(st=>{
     (st.caps||[]).forEach((c,j)=>{ if(c.by===ME.id&&j!==i){c.by='';c.ready=false;} });
@@ -3791,9 +4016,12 @@ function hostClaim(i){
 }
 function findClash(){
   const c=S.caps||[];
-  for(let i=0;i<c.length;i++)for(let j=i+1;j<c.length;j++){
-    if(colorDist(normHex(c[i].k),normHex(c[j].k))<18)
-      return `${c[i].n} e ${c[j].n} escolheram cores quase iguais — vai dar confusão com os coletes.`;
+  for(let i=0;i<c.length;i++){
+    const a=corIdx(c[i].k); if(a<0) continue;      // ainda sem cor nao e briga
+    for(let j=i+1;j<c.length;j++){
+      if(corIdx(c[j].k)===a)
+        return `${c[i].n} e ${c[j].n} estão os dois de ${CORES[a][0]} — um dos dois tem que trocar.`;
+    }
   }
   return null;
 }
@@ -3824,9 +4052,12 @@ function startDraft(){
     // a serpente e montada sobre a ordem sorteada, nao sobre a ordem digitada
     st.order=snakeOrder(4,pls.length).map(i=>perm[i]);
     st.extra=[]; st.dead=[];
-    st.phase='draft'; st.clock=Date.now(); st.paused=0; st.left=0;
+    /* antes do draft vem a disputa de cores as cegas */
+    st.caps.forEach(c=>{ c.k=''; c.kt=0; });
+    st.crev=[]; st.crod=1; st.crfim=0;
+    st.phase='cores'; st.clock=Date.now(); st.paused=0; st.left=0;
   });
-  flash('🎲 Ordem sorteada: '+textoOrdem());
+
 }
 function copyLink(){ copyTxt(location.origin+location.pathname+'?sala='+ME.room,'copyLinkBtn','📋 Copiar link'); }
 function shareLink(){
@@ -3863,12 +4094,12 @@ function renderLounge(){
     document.getElementById('loungeHint').textContent='Você acompanha o draft ao vivo assim que o organizador iniciar.';
     const nR=caps.filter(c=>c.by&&c.ready).length;
     wait.classList.toggle('hidden',!caps.length);
-    if(caps.length) wait.textContent=`⏳ ${nR} de 4 capitães prontos. O draft começa quando o organizador iniciar.`;
+    if(caps.length) wait.textContent=`⏳ ${nR} de 4 capitães prontos. O draft começa quando ${quemOrganiza()} iniciar.`;
     caps.forEach((c,i)=>{
-      const hex=normHex(c.k);
+      const hex=hexTime(c);
       const d=document.createElement('div'); d.className='cap-row';
       d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
-        `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
+        `<span><span class="nm"></span><br><span class="tm">${nomeCor(c)?'Time '+esc(nomeCor(c)):'ainda sem cor'}</span></span>`+
         `<span class="sp"></span>`;
       d.querySelector('.nm').textContent=c.n;
       const b=document.createElement('span');
@@ -3899,11 +4130,11 @@ function renderLounge(){
   }
 
   caps.forEach((c,i)=>{
-    const hex=normHex(c.k), mine=c.by===ME.id, boss=(c.by&&c.by===S.host);
+    const hex=hexTime(c), mine=c.by===ME.id, boss=(c.by&&c.by===S.host);
     const d=document.createElement('div');
     d.className='cap-row'+(mine?' me':'')+((c.by&&!mine)?' dim':'');
     d.innerHTML=`<span class="swatch" style="background:${esc(hex)}"></span>`+
-      `<span><span class="nm"></span><br><span class="tm">Time ${esc(colorName(hex))}</span></span>`+
+      `<span><span class="nm"></span><br><span class="tm">${nomeCor(c)?'Time '+esc(nomeCor(c)):'ainda sem cor'}</span></span>`+
       `<span class="sp"></span>`;
     d.querySelector('.nm').textContent=c.n;
     const sp=d.querySelector('.sp');
@@ -3933,24 +4164,12 @@ function renderLounge(){
   card.classList.toggle('hidden',!has);
   document.getElementById('rulesCard').classList.toggle('hidden',!has);
   if(has){
-    const c=caps[ME.cap], hex=normHex(c.k);
-    document.getElementById('myTeamName').textContent=`${c.n} · Time ${colorName(hex)}`;
-    const inp=document.getElementById('myColor');
-    if(document.activeElement!==inp) inp.value=hex;
-    document.getElementById('myColorName').textContent='Time '+colorName(hex);
-    const pal=document.getElementById('myPalette'); pal.innerHTML='';
-    QUICK.forEach(h=>{
-      const b=document.createElement('button'); b.className='sw'; b.style.background=h;
-      const used=caps.some((o,j)=>j!==ME.cap&&colorDist(normHex(o.k),h)<18);
-      if(used){ b.classList.add('taken'); b.title='já tem alguém nessa cor'; }
-      else b.onclick=()=>setMyColor(h);
-      pal.appendChild(b);
-    });
-    const cl=document.getElementById('colorClash');
-    const near=caps.find((o,j)=>j!==ME.cap&&colorDist(normHex(o.k),hex)<18);
-    cl.classList.toggle('hidden',!near);
-    if(near) cl.textContent=`⚠️ ${near.n} está numa cor quase igual — melhor mudar pra não confundir os coletes.`;
+    const c=caps[ME.cap];
+    document.getElementById('myTeamName').innerHTML =
+      `<b>${esc(c.n)}</b> — marque Pronto. A cor da camisa é disputada logo depois, com todo mundo montando a lista ao mesmo tempo.`;
+    document.getElementById('colorClash').classList.add('hidden');
     const rb=document.getElementById('readyBtn');
+    rb.disabled=false;
     rb.textContent = c.ready ? '↩ Ainda não estou pronto' : '✅ Estou pronto';
     rb.className = c.ready ? 'block' : 'ok block';
   }
@@ -3964,11 +4183,313 @@ function claim(i){
     st.caps[i].by=ME.id;
   });
 }
-function setMyColor(hex){ if(ME.cap<0) return; commit(st=>{ st.caps[ME.cap].k=normHex(hex); },true); }
-document.getElementById('myColor').addEventListener('input',e=>setMyColor(e.target.value));
 function toggleReady(){
   if(ME.cap<0) return;
   commit(st=>{ st.caps[ME.cap].ready=!st.caps[ME.cap].ready; });
+}
+
+/* ============ ESCOLHA DAS CORES ÀS CEGAS ============
+   Por que assim: quem escolhesse a cor na sala de espera saía na frente, e
+   quem organiza chegava primeiro por natureza. Uma corrida de "quem toca
+   antes" também não resolve — pela internet, quem ganharia seria quem tem a
+   conexão mais rápida, não quem tem o reflexo melhor.
+
+   Então cada capitão monta a ORDEM DE PREFERÊNCIA dele (1ª, 2ª, 3ª…) sem ver
+   a dos outros. Fechado o tempo, revela tudo junto e resolve em cascata: quem
+   pediu uma cor sozinho fica com ela; onde dois pediram a mesma, sai um
+   sorteio e o perdedor desce pra próxima preferência DELE — que pode muito
+   bem ainda estar livre. Quem ficar sem lista leva uma sorteada do que sobrou.
+
+   O sorteio sai de uma semente feita das próprias listas, então todo aparelho
+   calcula o mesmo resultado e ninguém consegue prever nada antes de escolher. */
+const CORES_SEC = 30;
+const REVELA_SEC = 9;   // tempo de tela pra todo mundo ler quem levou o que
+
+/* sorteio reproduzível: mesma semente, mesmo resultado, em todo aparelho */
+function semente(txt){
+  let h=2166136261>>>0;
+  for(let i=0;i<txt.length;i++){ h^=txt.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  return h>>>0;
+}
+function rngDe(seed){
+  let a=seed>>>0;
+  return function(){
+    a=(a+0x6D2B79F5)|0;
+    let t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+const semCorAinda = () => (S.caps||[]).map((c,i)=>i).filter(i=>corIdx(S.caps[i].k)<0);
+const coresLivresAgora = () => CORES.map((_,i)=>i).filter(i=>!(S.caps||[]).some(c=>corIdx(c.k)===i));
+function faltamEscolher(){ return semCorAinda().filter(i=>listaDe(i).length===0); }
+
+/* As escolhas NAO passam pelo estado compartilhado. Se passassem, os quatro
+   gravando no mesmo segundo se sobrescreveriam (o transporte guarda uma versao
+   só) e tres escolhas sumiriam. Entao cada um publica a sua num canal que só
+   acumula, igual ao chat, e quem fecha a rodada grava o RESULTADO uma vez só. */
+let escBuf=new Map();                 // "rodada|capitao" -> [cor1, cor2, ...]
+function chaveEsc(r,c){ return r+'|'+c; }
+function anotaEscolha(txt){
+  let d=null; try{ d=JSON.parse(txt); }catch(e){ return; }
+  if(!d||typeof d.c!=='number'||typeof d.r!=='number') return;
+  let l=d.k;
+  if(typeof l==='number') l=[l];                    // formato antigo, um valor só
+  if(!Array.isArray(l)) return;
+  l=l.filter(x=>Number.isInteger(x)&&x>=0&&x<CORES.length);
+  l=l.filter((x,k)=>l.indexOf(x)===k).slice(0,CORES.length);
+  escBuf.set(chaveEsc(d.r,d.c),l);     // mudou de ideia? a ultima lista vale
+}
+function listaDe(cap){ return escBuf.get(chaveEsc(S.crod||1,cap))||[]; }
+function minhaLista(){ return ME.cap>=0 ? listaDe(ME.cap) : []; }
+async function pullCores(){
+  try{
+    const r=await fetch(`https://${NTFY}/${topic()}-cor/json?poll=1&since=2h`,{cache:'no-store'});
+    if(!r.ok) return;
+    const t=await r.text();
+    for(const line of t.split('\n')){
+      if(!line.trim()) continue;
+      try{ const ev=JSON.parse(line); if(ev.event==='message'&&ev.message) anotaEscolha(ev.message); }catch(e){}
+    }
+  }catch(e){}
+}
+/* toca pra pôr no fim da fila; toca de novo pra tirar */
+function escolheCor(i){
+  if(ME.cap<0 || S.phase!=='cores') return;
+  if(corIdx(S.caps[ME.cap].k)>=0) return;          // ja tenho cor
+  const atual=minhaLista().slice();
+  const k=atual.indexOf(i);
+  if(k>=0) atual.splice(k,1); else atual.push(i);
+  publicaLista(atual);
+}
+function limpaCores(){ publicaLista([]); }
+function publicaLista(l){
+  if(ME.cap<0) return;
+  const pacote=JSON.stringify({r:S.crod||1, c:ME.cap, k:l, i:ME.id});
+  anotaEscolha(pacote);                            // eco local: a tela responde na hora
+  contaMsg();
+  fetch(`https://${NTFY}/${topic()}-cor`,{method:'POST',body:pacote}).catch(()=>{});
+  try{ renderCores(); }catch(e){}
+}
+
+/* Resolve TUDO de uma vez, em cascata pelas listas de preferência.
+   É idempotente: a mesma entrada dá a mesma saída, então se dois aparelhos
+   gravarem, gravam a mesma coisa. */
+function fechaRodadaCores(){
+  const pend=semCorAinda();
+  const listas={}; pend.forEach(i=>listas[i]=listaDe(i).slice());
+  const seed=semente(ME.room+'|'+(S.crod||1)+'|'+pend.map(i=>i+':'+listas[i].join('-')).join('.'));
+  const rnd=rngDe(seed);
+
+  const dono={};                                    // capitao -> cor
+  const perdeu={};                                  // capitao -> [cores que perdeu no sorteio]
+  const posic={};                                   // capitao -> posicao na lista dele (0 = 1a)
+  let livres=coresLivresAgora().slice();
+  let vivos=pend.slice();
+
+  /* Rodada após rodada, cada um disputa a preferência mais alta que ainda
+     está livre. Perdeu o sorteio? desce pra própria próxima preferência. */
+  for(let volta=0; volta<CORES.length+2 && vivos.length; volta++){
+    const querem={};
+    const semLista=[];
+    vivos.forEach(i=>{
+      const alvo=listas[i].find(c=>livres.includes(c));
+      if(alvo===undefined) semLista.push(i);
+      else (querem[alvo]=querem[alvo]||[]).push(i);
+    });
+    const ganhadores=[];
+    Object.keys(querem).map(Number).sort((a,b)=>a-b).forEach(c=>{
+      const cand=querem[c];
+      const v=cand[Math.floor(rnd()*cand.length)];
+      dono[v]=c;
+      posic[v]=listas[v].indexOf(c);
+      ganhadores.push(v);
+      cand.forEach(i=>{ if(i!==v){ (perdeu[i]=perdeu[i]||[]).push(c); } });
+    });
+    livres=livres.filter(c=>!ganhadores.some(v=>dono[v]===c));
+    vivos=vivos.filter(i=>dono[i]===undefined && !semLista.includes(i));
+    /* quem esgotou a lista (ou nem fez) leva sorteada do que sobrou */
+    if(!vivos.length){
+      semLista.forEach(i=>{
+        if(!livres.length) return;
+        const k=Math.floor(rnd()*livres.length);
+        dono[i]=livres[k]; posic[i]=-1; livres.splice(k,1);
+      });
+      break;
+    }
+    if(volta===CORES.length+1){
+      semLista.concat(vivos).forEach(i=>{
+        if(!livres.length) return;
+        const k=Math.floor(rnd()*livres.length);
+        dono[i]=livres[k]; posic[i]=-1; livres.splice(k,1);
+      });
+    }
+  }
+  // rede de seguranca: ninguem pode sair sem cor
+  pend.forEach(i=>{
+    if(dono[i]===undefined && livres.length){
+      const k=Math.floor(rnd()*livres.length);
+      dono[i]=livres[k]; posic[i]=-1; livres.splice(k,1);
+    }
+  });
+
+  const rev=pend.filter(i=>dono[i]!==undefined)
+                .map(i=>[i, dono[i], posic[i]===undefined?-1:posic[i], (perdeu[i]||[])]);
+  commit(st=>{
+    st.caps.forEach((c,i)=>{ if(dono[i]!==undefined){ c.k=CORES[dono[i]][1]; c.kt=Date.now(); } });
+    st.crev=rev;
+    /* nao pula direto pro draft: sem uma pausa aqui ninguem chega a LER quem
+       perdeu o que, que e justamente a graca da coisa */
+    st.crfim=1; st.clock=Date.now();
+  });
+}
+/* fim da revelacao -> comeca o draft */
+function comecaDraftDepoisDaRevelacao(){
+  commit(st=>{ st.crfim=0; st.phase='draft'; st.clock=Date.now(); st.paused=0; st.left=0; });
+}
+
+let coresDesde=0, coresMarco='', confDepoisDoTempo=0;
+function tentaFecharCores(){
+  if(S.phase!=='cores'||!ME.room) return;
+  if(pushPend) return;                     // sem entregar, resolver seria injusto
+  if(S.crfim){
+    if(decorrido()<REVELA_SEC) return;
+    const esp=decorrido()-REVELA_SEC;
+    if((ME.role==='host'&&esp>=0)||(ME.cap>=0&&esp>=4)) comecaDraftDepoisDaRevelacao();
+    return;
+  }
+  const marco=(S.crod||0)+'|'+semCorAinda().map(i=>listaDe(i).join('-')).join(',');
+  if(marco!==coresMarco){ coresMarco=marco; coresDesde=0; confDepoisDoTempo=0; }
+  const todos = faltamEscolher().length===0 && semCorAinda().length>0;
+  const estourou = !!S.clock && decorrido()>=CORES_SEC;
+  if(!todos && !estourou){ coresDesde=0; return; }
+  if(!coresDesde) coresDesde=agoraMono();
+  const espera=(agoraMono()-coresDesde)/1000;
+  const souHost=ME.role==='host', souCap=ME.cap>=0;
+  /* o organizador fecha primeiro; capitao entra de reserva se ele estiver com
+     o celular no bolso (navegador congela temporizador de aba em segundo plano) */
+  if((souHost&&espera>=0.6)||(souCap&&espera>=5)){
+    if(estourou&&!todos){
+      /* pode ser que a escolha de alguem tenha se perdido no caminho — confere
+         no canal antes de sortear por cima de quem escolheu de verdade */
+      if(!confDepoisDoTempo){ confDepoisDoTempo=1;
+        pullCores().then(()=>{ confDepoisDoTempo=2; }); return; }
+      if(confDepoisDoTempo===1) return;
+    }
+    fechaRodadaCores();
+  }
+}
+
+function renderCores(){
+  const caps=S.caps||[];
+  const eu=ME.cap, minhaCor=eu>=0?corIdx((caps[eu]||{}).k):-1;
+  const livres=coresLivresAgora();
+  const lista=minhaLista();
+  const faltam=faltamEscolher().length;
+  const pend=semCorAinda().length;
+
+  const revelando=!!S.crfim;
+  const lim = revelando ? REVELA_SEC : CORES_SEC;
+  const r=Math.max(0,lim-decorrido());
+  document.getElementById('coresClock').textContent = revelando
+    ? 'draft em '+r : '0:'+String(r).padStart(2,'0');
+  document.getElementById('coresClock').classList.toggle('mini2',revelando);
+  const bar=document.getElementById('coresBar');
+  bar.style.width=(r/lim*100)+'%';
+  bar.classList.toggle('warn',!revelando&&r<=7);
+  document.getElementById('coresClock').classList.toggle('warn',!revelando&&r<=7);
+  document.getElementById('coresCard').classList.toggle('hidden',revelando);
+  if(revelando){
+    document.getElementById('revelaCard').classList.remove('hidden');
+    document.getElementById('revelaTtl').innerHTML=`🎲 Deu isso <span class="count" id="revelaConta">draft em ${r}s</span>`;
+  }
+
+  const pal=document.getElementById('coresPal');
+  pal.innerHTML='';
+  const podeEscolher = eu>=0 && minhaCor<0;
+  CORES.forEach(([nome,hex],i)=>{
+    const b=document.createElement('button');
+    const tomada=!livres.includes(i);
+    const pos=lista.indexOf(i);
+    b.className='sw'+(tomada?' taken':'')+(pos>=0?' escolhida':'');
+    b.style.background=hex;
+    const tinta = luzDe(hex)>0.55 ? '#1B2A20' : '#FFFFFF';
+    if(pos>=0){
+      const n=document.createElement('span'); n.className='ordem';
+      n.textContent=(pos+1)+'º';
+      n.style.color=tinta; n.style.borderColor=tinta;
+      b.appendChild(n);
+    }
+    const eti=document.createElement('span'); eti.className='cn'; eti.textContent=nome;
+    eti.style.color=tinta;
+    b.appendChild(eti);
+    if(tomada){
+      const d=caps.findIndex(c=>corIdx(c.k)===i);
+      b.disabled=true; b.title=(d>=0?caps[d].n:'alguém')+' ficou com '+nome;
+    } else if(podeEscolher){
+      b.onclick=()=>escolheCor(i);
+      b.title = pos>=0 ? 'toque de novo pra tirar da lista' : 'toque pra pôr na sua ordem';
+    } else { b.disabled=true; }
+    pal.appendChild(b);
+  });
+  const lb=document.getElementById('limpaCores');
+  if(lb) lb.classList.toggle('hidden', !(podeEscolher && lista.length));
+
+  const st=document.getElementById('coresStatus');
+  const placar = ` <b>${pend-faltam} de ${pend}</b> já montaram a lista.`;
+  const quantosFaltam = faltam===0 ? 'todo mundo já montou'
+                      : (faltam===1 ? 'falta 1' : `faltam ${faltam}`);
+  if(eu<0){
+    st.innerHTML=`👀 Você está assistindo — <b>${pend-faltam} de ${pend}</b> já montaram a ordem de preferência. Ninguém vê a lista do outro até fechar.`;
+  } else if(minhaCor>=0){
+    st.innerHTML=`✅ Seu time é <b>${CORES[minhaCor][0]}</b>. Pra fechar, ${quantosFaltam}.`;
+  } else if(lista.length){
+    const txt=lista.map((c,k)=>`<b>${k+1}º ${CORES[c][0]}</b>`).join(' · ');
+    st.innerHTML=`Sua ordem: ${txt}. Toque de novo numa cor pra tirar.${pend===1?' Só depende de você.':` Ainda ${quantosFaltam}.`}`;
+  } else {
+    st.innerHTML=`⚡ Toque nas cores <b>na ordem que você prefere</b>: a 1ª primeiro, depois a 2ª, e por aí vai.${placar} Sem lista nenhuma, o app sorteia pra você.`;
+  }
+
+  // resultado da disputa
+  const rc=document.getElementById('revelaCard'), rl=document.getElementById('revelaLista');
+  const rev=S.crev||[];
+  if(!revelando) rc.classList.toggle('hidden',!rev.length);
+  rl.innerHTML='';
+  rev.forEach(([i,c,pos,perdidas])=>{
+    const d=document.createElement('div'); d.className='rev';
+    d.innerHTML=`<span class="bol" style="background:${esc(CORES[c][1])}"></span><span class="tx"></span>`;
+    const nome=(caps[i]||{}).n||'?';
+    const nn=(perdidas||[]).map(x=>CORES[x][0]);
+    const perdi = nn.length<2 ? nn.join('') : nn.slice(0,-1).join(', ')+' e '+nn[nn.length-1];
+    let txt;
+    if(pos<0){
+      txt = nn.length
+        ? `<b>${esc(nome)}</b> perdeu ${perdi} no sorteio, acabou a lista dele e saiu sorteado em <b>${CORES[c][0]}</b>`
+        : `<b>${esc(nome)}</b> não montou lista — saiu no sorteio: <b>${CORES[c][0]}</b>`;
+    } else if(pos===0){
+      txt = `<b>${esc(nome)}</b> levou a 1ª dele: <b>${CORES[c][0]}</b>`;
+    } else {
+      txt = `<b>${esc(nome)}</b> perdeu ${perdi} no sorteio e ficou com a ${pos+1}ª dele: <b>${CORES[c][0]}</b>`;
+    }
+    d.querySelector('.tx').innerHTML = txt;
+    rl.appendChild(d);
+  });
+
+  const box=document.getElementById('coresCaps'); box.innerHTML='';
+  caps.forEach((c,i)=>{
+    const ci=corIdx(c.k);
+    const d=document.createElement('div'); d.className='cap-row'+(i===eu?' me':'');
+    d.innerHTML=`<span class="swatch" style="background:${esc(hexTime(c))}"></span>`+
+      `<span><span class="nm"></span><br><span class="tm">${ci>=0?'Time '+CORES[ci][0]:'—'}</span></span>`+
+      `<span class="sp"></span>`;
+    d.querySelector('.nm').textContent=c.n;
+    const b=document.createElement('span');
+    const nL=listaDe(i).length;
+    b.className='bdg '+(ci>=0?'ready':(nL?'in':'wait'));
+    b.textContent = ci>=0 ? 'fechado ✓' : (nL ? 'lista pronta' : 'montando…');
+    d.querySelector('.sp').appendChild(b);
+    box.appendChild(d);
+  });
 }
 
 /* ================= DRAFT ================= */
@@ -4037,6 +4558,7 @@ let chatBuf=[], chatSent=[], chatFirst=true;
 
 function meuNome(){
   if(ME.cap>=0 && S.caps[ME.cap]) return S.caps[ME.cap].n;
+  if(ME.role==='host' && (S.hostName||'').trim()) return S.hostName.trim();
   return (LS('slg_name')||'').trim();
 }
 function addChat(m){
@@ -4203,10 +4725,10 @@ function renderHist(){
       const h=document.createElement('div'); h.className='rd'; h.textContent='— rodada '+r+' (as '+ordNum(r-1)+' picks)';
       log.appendChild(h);
     }
-    const c=S.caps[pk.t]||{n:'?',k:'#999'};
+    const c=S.caps[pk.t]||{n:'?',k:''};
     const d=document.createElement('div'); d.className='h';
     d.innerHTML=`<span class="np">${ordNum(capPickNo(i)-1)}<span class="soDesktop"> pick</span></span>`+
-      `<span class="dot" style="background:${esc(normHex(c.k))}"></span>`+
+      `<span class="dot" style="background:${esc(hexTime(c))}"></span>`+
       `<span class="cap"></span><span class="arw">escolheu</span><span class="pl"></span>`;
     d.querySelector('.cap').textContent=c.n;
     d.querySelector('.pl').textContent=pk.p;
@@ -4439,7 +4961,7 @@ function renderDraft(){
     sw.style.background='transparent';
     document.getElementById('upnext').textContent='';
   }else{
-    const c=caps[t], hex=normHex(c.k);
+    const c=caps[t], hex=hexTime(c);
     who.innerHTML=''; who.append(document.createTextNode(c.n));
     const sm=document.createElement('small'); sm.textContent='TIME '+teamLabel(t).toUpperCase();
     who.appendChild(sm);
@@ -4561,7 +5083,7 @@ function renderDraft(){
   /* times */
   const box=document.getElementById('teams'); box.innerHTML='';
   caps.forEach((c,i)=>{
-    const hex=normHex(c.k), list=roster(i);
+    const hex=hexTime(c), list=roster(i);
     const provHere = S.prov&&S.prov.t===i ? S.prov.p : null;
     const aberto = window.innerWidth>940 ? true : !!timesAbertos[i];
     const d=document.createElement('div'); d.className='team'+(i===t?' on':'')+(aberto?' aberto':'');
@@ -4638,7 +5160,7 @@ function renderResumo(){
 
   const g=document.getElementById('resGrid'); g.innerHTML='';
   caps.forEach((c,i)=>{
-    const hex=normHex(c.k), list=roster(i);
+    const hex=hexTime(c), list=roster(i);
     const box=document.createElement('div'); box.className='resT';
     const h=document.createElement('div'); h.className='rh';
     h.innerHTML=`<span class="dot" style="background:${esc(hex)}"></span>`+
@@ -4741,9 +5263,19 @@ function tentaResolver(){
   if( (souDaVez && atraso>=3) || (souHost && atraso>=6) || (souCap && atraso>=12) ) autoResolve();
 }
 setInterval(()=>{
-  if(S.phase!=='draft'||!ME.room) return;
+  if(!ME.room) return;
+  if(S.phase==='cores'){
+    try{ renderCores(); }catch(e){}
+    try{ renderRede(); }catch(e){}
+    try{ tentaFecharCores(); }catch(e){}
+    return;
+  }
+  if(S.phase!=='draft') return;
   tickClock();
   try{ renderRede(); }catch(e){}
+  /* presenca muda sem mudar o estado do draft, entao os contadores se atualizam aqui */
+  try{ if(connState==='on') setConn('on'); }catch(e){}
+  try{ renderPlateia(); }catch(e){}
   tentaResolver();
 },400);
 
