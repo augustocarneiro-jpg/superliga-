@@ -67,7 +67,12 @@
     padding:11px 15px;cursor:pointer;box-shadow:var(--sh-sm);
     transition:transform .06s,box-shadow .06s,background .15s;-webkit-tap-highlight-color:transparent
   }
-  button:hover:not(:disabled){background:var(--gold-2)}
+  /* Só onde existe mouse de verdade. No iPhone o :hover fica grudado no ponto
+     onde o dedo tocou, e o proximo nome da lista subia pra la ja amarelo, como
+     se estivesse selecionado. */
+  @media (hover:hover) and (pointer:fine){
+    button:hover:not(:disabled){background:var(--gold-2)}
+  }
   button:active:not(:disabled){transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
   button:disabled{opacity:.4;cursor:not-allowed;box-shadow:2px 2px 0 rgba(27,42,32,.3)}
   button.go{background:var(--gold);font-size:.98rem;padding:13px 22px}
@@ -242,6 +247,16 @@
     text-align:left;background:#fff;box-shadow:2px 2px 0 var(--ink);padding:11px 12px
   }
   .pool .p .hl{background:var(--gold);border-radius:3px}
+  /* o jogador que esta na mesa fica no lugar dele, marcado */
+  .pool .p.namesa{
+    background:var(--gold);box-shadow:2px 2px 0 var(--ink);
+    display:flex;align-items:center;justify-content:space-between;gap:8px
+  }
+  .pool .p.namesa:disabled{opacity:1}
+  .pool .p.namesa .mk{
+    font-family:'Anton',sans-serif;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink);opacity:.75;flex:none
+  }
   .pool .empty{
     font-family:'Anton',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
     text-align:center;padding:26px 8px;font-size:.82rem
@@ -293,7 +308,17 @@
     body.escolhendo .conn{bottom:calc(122px + env(safe-area-inset-bottom))}
   }
 
-  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  /* align-items:start — sem isso o card fechado do lado esticava junto com o
+     aberto, porque no grid os itens da mesma linha ganham a altura do maior */
+  .teams{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+  /* no computador os times ja ficam sempre abertos, entao a barra so serve no celular */
+  #barraTimes{display:none}
+  #barraTimes.hidden{display:none!important}
+  @media(max-width:940px){
+    #barraTimes{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;margin-bottom:10px}
+    #barraTimes .count{font-size:.68rem;line-height:1.25;min-width:0}
+    #barraTimes button{flex:none;font-size:.66rem;padding:6px 9px}
+  }
   @media(max-width:1080px){.teams{grid-template-columns:repeat(2,1fr);gap:9px}}
   @media(max-width:940px){
     /* no celular o time vem fechado: cor, capitao, quantos e o ultimo escolhido.
@@ -353,7 +378,7 @@
     .card{padding:13px}
     #colPool{padding:11px 13px}
     #histCard,#chatCard{padding:13px}
-    .hist{max-height:none}
+
     h2.ttl{font-size:.95rem}
   }
   .err{color:var(--red);font-weight:800;font-size:.85rem;margin-top:9px}
@@ -394,7 +419,18 @@
   }
   /* sequencia das escolhas */
   #histCard{margin-top:18px}
-  .hist{display:flex;flex-direction:column;gap:5px;max-height:340px;overflow-y:auto}
+  /* 2) rolagem instantanea: com scroll-behavior:smooth o valor lido logo depois
+     de mexer no scrollTop vem no meio da animacao, e a posicao de quem estava
+     lendo as primeiras picks se perdia */
+  .hist{display:flex;flex-direction:column;gap:5px;max-height:min(340px,40vh);overflow-y:auto}
+  #histCard{position:relative}
+  /* quem subiu pra rever as primeiras picks nao perde as novas de vista */
+  .chipNovas{
+    position:absolute;right:14px;bottom:12px;z-index:8;
+    background:var(--ink);color:var(--gold-2);border-color:var(--ink);
+    font-size:.66rem;padding:7px 12px;box-shadow:3px 3px 0 rgba(0,0,0,.2)
+  }
+  .chipNovas.hidden{display:none}
   .hist .h{
     display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--ink);
     border-radius:6px;padding:6px 9px;font-size:.9rem;font-weight:700;
@@ -797,6 +833,10 @@
         </div>
       </div>
       <div id="colTeams">
+        <div class="row between" id="barraTimes">
+          <span class="count" id="dicaTimes">toque num time pra ver os nomes</span>
+          <button class="sm" onclick="todosOsTimes()" id="btnTodosTimes">👁 Abrir todos</button>
+        </div>
         <div class="teams" id="teams"></div>
         <div class="row" style="margin-top:16px" id="draftCtrls">
           <button onclick="copyExport()" id="copyBtn">📋 Copiar times</button>
@@ -813,6 +853,7 @@
   </section>
 
   <div class="card hidden" id="histCard">
+    <button class="chipNovas hidden" id="chipNovas" onclick="vaiPraUltima()">▼ última escolha</button>
     <div id="sorteioLinha" class="sorteioBox hidden"></div>
     <div class="row between">
       <h2 class="ttl"><span class="soDesktop">📜 Sequência das escolhas</span><span class="soCelular">📜 Sequência</span></h2>
@@ -852,7 +893,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v10</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v14</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -3370,6 +3411,7 @@ function openWS(){
     if(pushQueue||pushPend){pushQueue=false;pushNow();}
     pullChat();     // rede de seguranca: puxa o que passou enquanto estava fora
     pullCores();
+    setTimeout(()=>{ try{ bate(true); }catch(e){} },500);
   };
   ws.onmessage = ev=>{
     try{
@@ -3400,8 +3442,11 @@ function retry(){ clearTimeout(wsTimer); wsTimer=setTimeout(openWS,4000); }
    Custo: ~30 mensagens por pessoa num draft de 25 min, contra ~250 por rede
    por dia. Só bate durante o draft e com a tela acesa. */
 const HOST_TIMEOUT=180000;
-const PRES_TTL=155;                  // segundos de tolerancia (3 batimentos)
+/* 200s: quem apaga a tela por um minuto esperando a vez continua contando.
+   Abaixo disso o numero piscava toda hora que alguem trocava de app. */
+const PRES_TTL=200;
 const PING_MS=50000;
+const PING_MIN=12000;                // nao repete batimento mais rapido que isso
 let hostSeen=Date.now();
 /* id -> {t: horario do servidor, l: quando chegou aqui, n: nome, r: papel} */
 let presencas=new Map();
@@ -3447,24 +3492,33 @@ function renderPlateia(){
 function textoAoVivo(){
   const v=aoVivo();
   const caps=v.filter(x=>x.r==='cap'||x.r==='host').length;
-  const nomes=v.map(x=>(x.n||'alguém')+(x.eu?' (você)':'')).join(', ');
+  const nomes=v.map(x=>(x.n||(x.r==='view'?'um torcedor':'alguém'))+(x.eu?' (você)':'')).join(', ');
   return {n:v.length, caps, torcida:Math.max(0,v.length-caps), nomes};
 }
 function quemAoVivo(){
   const t=textoAoVivo();
   flash(`👀 ${t.n} ao vivo — ${t.nomes}`, 5200);
 }
-setInterval(()=>{
+/* Bate agora, sem esperar o proximo ciclo. Sem isso o aparelho ficava ATE 50s
+   invisivel pros outros — foi o que fez um dizer "1 ao vivo" e o outro "2 ao
+   vivo" no mesmo instante: cada um tinha entrado num momento diferente e ainda
+   nao havia mandado o primeiro batimento. */
+let ultimoPing=0;
+function bate(forcado){
   if(!ME.room) return;
   if(ME.role==='host') hostSeen=Date.now();
   if(S.phase!=='draft') return;                       // na sala de espera nao precisa
   if(onClock()===null) return;                        // draft acabou
   if(document.visibilityState!=='visible') return;    // tela apagada nao gasta mensagem
   if(cotaEstourada) return;                           // sem cota, batimento e o primeiro a ceder
+  const agora=Date.now();
+  if(forcado && agora-ultimoPing<PING_MIN) return;    // nao vira metralhadora
+  ultimoPing=agora;
   contaMsg();
   const corpo=JSON.stringify({i:ME.id, n:String(meuNome()||'').slice(0,14), r:ME.role});
   fetch(`https://${NTFY}/${topic()}-hb`,{method:'POST',body:corpo}).catch(()=>{});
-},PING_MS);
+}
+setInterval(()=>bate(false),PING_MS);
 
 /* O ntfy corta em 4096 bytes — acima disso ele transforma a mensagem em anexo,
    devolve 200 e o assinante recebe um texto que não é JSON. Ou seja: quebraria
@@ -3767,7 +3821,14 @@ function show(id){
   });
   document.getElementById('brand').classList.toggle('mini',id==='vDraft'||id==='vCores');
 }
+let faseAnterior='';
 function route(){
+  /* Vale pra quem recebe E pra quem grava a virada: o organizador nao passa
+     por merge quando ele mesmo inicia, e ficava invisivel na contagem. */
+  if(S.phase!==faseAnterior){
+    faseAnterior=S.phase;
+    if(S.phase==='draft') setTimeout(()=>{ try{ bate(true); }catch(e){} },500);
+  }
   try{ renderChat(); renderHist(); renderGone(); renderRodape(); }catch(e){}
   if(!ME.room){ show('vLobby'); return; }
   if(S.phase==='cores'){ show('vCores'); renderCores(); return; }
@@ -4509,6 +4570,13 @@ function toggleTime(i){
   timesAbertos[i]=!timesAbertos[i];
   renderDraft();
 }
+/* Muita gente nao descobria que dava pra tocar no time. Agora tem o botao. */
+function todosOsTimes(){
+  const n=(S.caps||[]).length;
+  const todosAbertos = n>0 && (S.caps||[]).every((c,i)=>!!timesAbertos[i]);
+  for(let i=0;i<n;i++) timesAbertos[i]=!todosAbertos;
+  renderDraft();
+}
 let minhaEscolha=null;    // o que EU deixei na mesa, pra avisar se não valeu
 let avisadoTurno='';      // pra vibrar/apitar uma vez por turno
 
@@ -4731,8 +4799,16 @@ function renderHist(){
     }
   }
   const log=document.getElementById('histLog');
+  /* A sequência é lida de baixo pra cima na hora do draft: o que interessa é a
+     pick que ACABOU de sair. Então a lista fica colada no fim, e quem subir pra
+     rever as primeiras não é puxado de volta — ganha um atalho no canto. */
+  const estavaNoFim = log.scrollHeight-log.scrollTop-log.clientHeight < 44;
+  const ondeEstava = log.scrollTop;
+  const mudou = S.picks.length!==histQtd;
+  const primeiraVez = histQtd<0;
+  histQtd=S.picks.length;
   log.innerHTML='';
-  if(!S.picks.length){ log.innerHTML='<div class="vazio">nenhuma escolha ainda</div>'; return; }
+  if(!S.picks.length){ log.innerHTML='<div class="vazio">nenhuma escolha ainda</div>'; chipNovas(false); return; }
   let rodada=-1;
   S.picks.forEach((pk,i)=>{
     const r=capPickNo(i);
@@ -4752,7 +4828,28 @@ function renderHist(){
     if(marca){ const tg=document.createElement('span'); tg.className='tag'; tg.textContent=marca; d.appendChild(tg); }
     log.appendChild(d);
   });
+  if(estavaNoFim||primeiraVez){
+    log.scrollTop=log.scrollHeight; chipNovas(false);
+  } else {
+    log.scrollTop=ondeEstava;
+    if(mudou) chipNovas(true);
+  }
 }
+let histQtd=-1;
+function chipNovas(mostrar){
+  const c=document.getElementById('chipNovas');
+  if(c) c.classList.toggle('hidden',!mostrar);
+}
+function vaiPraUltima(){
+  const log=document.getElementById('histLog');
+  log.scrollTop=log.scrollHeight; chipNovas(false);
+}
+try{
+  document.getElementById('histLog').addEventListener('scroll',()=>{
+    const l=document.getElementById('histLog');
+    if(l.scrollHeight-l.scrollTop-l.clientHeight<44) chipNovas(false);
+  });
+}catch(e){}
 function histText(){
   const cab = (S.sorteio||[]).length ? `🎲 ordem sorteada: ${textoOrdem()}\n` : '';
   if(!S.picks.length) return cab+'Nenhuma escolha ainda.';
@@ -5079,6 +5176,11 @@ function renderDraft(){
   document.getElementById('poolBody').classList.toggle('escondido',!abrirLista);
   document.getElementById('poolSeta').textContent = abrirLista ? '▾' : '▸';
 
+  const naMesa = (S.prov&&S.prov.p) ? S.prov.p : null;
+  /* o provisorio continua ocupando o lugar dele na lista, marcado */
+  const listaTela = naMesa && !q ? S.players.filter(n=>shown.includes(n)||n===naMesa)
+                  : (naMesa && q && naMesa.toLowerCase().includes(q)
+                      ? S.players.filter(n=>shown.includes(n)||n===naMesa) : shown);
   const pool=document.getElementById('pool'); pool.innerHTML='';
   if(!avail.length && !S.prov && !done){
     pool.innerHTML='<div class="empty">⚠️ Acabaram os jogadores disponíveis mas ainda falta pick.<br>'+
@@ -5087,14 +5189,22 @@ function renderDraft(){
   else if(!avail.length&&!S.prov) pool.innerHTML='<div class="empty">'+(editMode
       ? 'Ninguém sobrando — dá pra trocar dois jogadores de time entre si.'
       : 'Acabou — todos escolhidos ✅')+'</div>';
-  else if(!shown.length) pool.innerHTML='<div class="empty">Nenhum nome com “'+esc(q)+'”</div>';
-  else shown.forEach(n=>{
-    const b=document.createElement('button'); b.className='p';
-    if(q){
+  else if(!listaTela.length) pool.innerHTML='<div class="empty">Nenhum nome com “'+esc(q)+'”</div>';
+  else listaTela.forEach(n=>{
+    const b=document.createElement('button');
+    const eleMesmo = n===naMesa;
+    b.className='p'+(eleMesmo?' namesa':'');
+    if(q && !eleMesmo){
       const i=n.toLowerCase().indexOf(q);
       b.innerHTML=esc(n.slice(0,i))+'<span class="hl">'+esc(n.slice(i,i+q.length))+'</span>'+esc(n.slice(i+q.length));
     } else b.textContent=n;
-    if(editMode){
+    if(eleMesmo){
+      const tg=document.createElement('span'); tg.className='mk';
+      tg.textContent = canAct() ? 'na mesa · toque pra tirar' : 'na mesa';
+      b.appendChild(tg);
+      b.disabled=!canAct()||editMode;
+      b.onclick=()=>clearProv();
+    } else if(editMode){
       b.disabled = editSel===null;
       b.onclick=()=>editSubstitute(n);
     } else {
@@ -5105,6 +5215,16 @@ function renderDraft(){
   });
 
   /* times */
+  const bt=document.getElementById('btnTodosTimes');
+  if(bt){
+    const n=caps.length;
+    const todosAbertos = n>0 && caps.every((c,i)=>!!timesAbertos[i]);
+    bt.textContent = todosAbertos ? '🙈 Fechar todos' : '👁 Abrir todos';
+    const bb=document.getElementById('barraTimes');
+    if(bb) bb.classList.toggle('hidden', done && !editMode);
+    const dica=document.getElementById('dicaTimes');
+    if(dica) dica.textContent = todosAbertos ? 'toque num time pra fechar só ele' : 'toque num time pra ver os nomes';
+  }
   const box=document.getElementById('teams'); box.innerHTML='';
   caps.forEach((c,i)=>{
     const hex=hexTime(c), list=roster(i);
@@ -5353,15 +5473,19 @@ function toggleExport(){
     const st=await pullState();
     if(st) merge(st);
     syncRole(); restauraAncora(); openWS(); route(); pullChat();
+    setTimeout(()=>{ try{ bate(true); }catch(e){} },900);
   } else {
     setConn('off','sem sala'); show('vLobby');
   }
 
   document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible'){ ultimoPing=0; return; }
     if(document.visibilityState==='visible'&&ME.room){
       if(!ws||ws.readyState>1) openWS();
       pullState().then(st=>{ if(st) merge(st); try{ tickClock(); tentaResolver(); }catch(e){} });
       pullChat();
+      /* voltou pra tela: avisa que continua aqui antes de sumir da contagem */
+      try{ bate(true); }catch(e){}
     }
   });
   window.addEventListener('online',()=>{ if(ME.room) openWS(); });
