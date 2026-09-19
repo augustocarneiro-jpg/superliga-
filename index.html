@@ -330,6 +330,92 @@
     .team .head .tn{font-size:.78rem}
     .team .head .cap{font-size:.74rem}
   }
+  /* ===== trocas ===== */
+  .trocaLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .trocaLista .tl{
+    font-family:'Nunito',sans-serif;text-transform:none;letter-spacing:0;font-weight:800;font-size:.76rem;
+    padding:7px 10px;box-shadow:2px 2px 0 var(--ink);background:#fff;display:inline-flex;align-items:center;gap:6px
+  }
+  .trocaLista .tl .dt{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);flex:none}
+  .trocaLista .tl.sel{background:var(--gold);outline:3px solid var(--ink);outline-offset:1px}
+  .trocaLista .rot{width:100%;font-family:'Anton',sans-serif;font-size:.66rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:4px}
+  .oferta{
+    background:var(--gold);border:3px solid var(--ink);border-radius:10px;padding:11px 13px;
+    box-shadow:var(--sh-sm);margin-bottom:10px
+  }
+  .oferta h3{font-family:'Anton',sans-serif;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
+  .oferta p{font-size:.86rem;font-weight:700;margin-bottom:9px}
+  .oferta .row{gap:7px}
+  .minhaOferta{
+    background:var(--cream-2);border:2.5px dashed var(--ink);border-radius:9px;padding:8px 11px;
+    font-size:.78rem;font-weight:700;margin-bottom:9px
+  }
+  .chatlog .troca{
+    background:rgba(233,169,59,.18);border-left:4px solid var(--gold);
+    padding:7px 9px;border-radius:6px;font-size:.8rem;font-weight:700;line-height:1.35
+  }
+  .chatlog .troca.sim{background:rgba(47,168,79,.16);border-left-color:var(--green)}
+  .chatlog .troca.nao{background:rgba(198,64,60,.14);border-left-color:var(--red)}
+
+  /* ===== campinho ===== */
+  .campo{padding:8px}
+  .formRow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+  .formRow{gap:4px}
+  .formRow button{font-size:.56rem;padding:4px 7px;box-shadow:2px 2px 0 var(--ink)}
+  .formRow button.on{background:var(--gold)}
+  .formRow .dform{font-size:.64rem;font-weight:700;color:var(--ink-soft);width:100%;margin-top:2px}
+  .gramado{
+    position:relative;width:100%;aspect-ratio:7/5;border-radius:8px;
+    border:2.5px solid var(--ink);overflow:hidden;
+    background:
+      linear-gradient(90deg,rgba(0,0,0,.055) 0 50%,transparent 50% 100%) 0 0/16.66% 100%,
+      linear-gradient(90deg,#3f8f52,#2f7a42);
+  }
+  .gramado::before{content:'';position:absolute;top:6%;bottom:6%;left:50%;width:0;border-left:2px solid rgba(255,255,255,.45)}
+  .gramado::after{content:'';position:absolute;left:50%;top:50%;height:34%;aspect-ratio:1;transform:translate(-50%,-50%);
+    border:2px solid rgba(255,255,255,.45);border-radius:50%}
+  .area{position:absolute;top:24%;bottom:24%;width:9%;border:2px solid rgba(255,255,255,.4)}
+  .area.cima{left:0;border-left:none}
+  .area.baixo{right:0;border-right:none}
+  /* Bolinha com as iniciais: nome inteiro nao cabe num card de 176px e
+     encavalava o vizinho. Quem quiser saber quem é, toca e o nome aparece. */
+  .vaga{
+    position:absolute;transform:translate(-50%,-50%);z-index:2;
+    background:none;border:none;box-shadow:none;padding:0;cursor:pointer;display:block
+  }
+  .vaga .bolha{
+    display:flex;align-items:center;justify-content:center;
+    width:27px;height:27px;border-radius:50%;border:2px solid var(--ink);
+    background:rgba(255,255,255,.3);
+    font-family:'Anton',sans-serif;font-size:.6rem;letter-spacing:.01em;color:#fff;text-align:center
+  }
+  .vaga:not(.cheia) .bolha{font-size:.42rem;background:rgba(255,255,255,.22)}
+  .vaga.cheia .bolha{box-shadow:0 2px 5px rgba(0,0,0,.4)}
+  .balao{
+    position:absolute;transform:translate(-50%,-100%);z-index:6;
+    background:var(--ink);color:var(--cream);border-radius:7px;padding:4px 8px;
+    font-family:'Nunito',sans-serif;font-weight:800;font-size:.66rem;white-space:nowrap;
+    box-shadow:0 3px 8px rgba(0,0,0,.35);pointer-events:none
+  }
+  .balao small{display:block;font-family:'Anton',sans-serif;font-size:.54rem;
+    letter-spacing:.08em;color:var(--gold-2);font-weight:400}
+  @media(min-width:520px){ .vaga .bolha{width:32px;height:32px;font-size:.68rem} }
+  .vaga.sel .bolha{outline:3px solid var(--gold);outline-offset:2px}
+  .vaga.alvo .bolha{border-style:dashed;animation:pisca 1s infinite}
+  @keyframes pisca{50%{opacity:.45}}
+  .banco{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;min-height:32px;
+    border:2px dashed rgba(27,42,32,.3);border-radius:8px;padding:6px}
+  .banco.alvo{border-color:var(--gold);background:rgba(233,169,59,.12)}
+  .banco .bt{
+    font-family:'Nunito',sans-serif;text-transform:none;letter-spacing:0;font-weight:800;font-size:.66rem;
+    padding:5px 8px;box-shadow:2px 2px 0 var(--ink);background:#fff
+  }
+  .banco .bt.sel{background:var(--gold);outline:3px solid var(--ink);outline-offset:1px}
+  .banco .bt.cap{background:var(--ink);color:var(--cream)}
+  .banco .vazio{font-size:.64rem;font-weight:700;color:var(--ink-soft);padding:4px 6px}
+  .dicaCampo{font-size:.64rem;font-weight:700;color:var(--ink-soft);margin-top:7px}
+
   .team{border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--cream-2);box-shadow:var(--sh-sm)}
   .team.on{box-shadow:0 0 0 3px var(--gold),var(--sh)}
   .team .head{padding:8px 10px;border-bottom:3px solid var(--ink)}
@@ -805,6 +891,8 @@
       <div id="turnMine" class="yourturn hidden">⚡ é a sua vez — toque num jogador</div>
     </div>
 
+    <div id="caixaOfertas"></div>
+
     <div class="board" id="board">
       <div class="card" id="colPool" style="margin:0">
         <div id="editBar" class="editbar hidden">
@@ -836,6 +924,22 @@
         <div class="row between" id="barraTimes">
           <span class="count" id="dicaTimes">toque num time pra ver os nomes</span>
           <button class="sm" onclick="todosOsTimes()" id="btnTodosTimes">👁 Abrir todos</button>
+        </div>
+        <div class="row" id="barraCampo" style="margin-bottom:10px">
+          <button class="sm" onclick="modoCampo()" id="btnCampo">⚽ Ver campinho</button>
+          <button class="sm hidden" onclick="abreTroca()" id="btnTroca">⇄ Propor troca</button>
+        </div>
+        <div class="card hidden" id="trocaPainel" style="margin-bottom:10px">
+          <div class="row between">
+            <h2 class="ttl">⇄ Propor troca</h2>
+            <button class="sm plain" onclick="fechaTroca()">✕</button>
+          </div>
+          <p class="hint" id="trocaPasso">Toque num jogador SEU e depois num jogador de outro time.</p>
+          <div id="trocaMeus" class="trocaLista"></div>
+          <div id="trocaOutros" class="trocaLista"></div>
+          <div class="row" style="margin-top:12px">
+            <button class="ok" id="trocaEnviar" onclick="enviaTroca()" disabled>📨 Enviar proposta</button>
+          </div>
         </div>
         <div class="teams" id="teams"></div>
         <div class="row" style="margin-top:16px" id="draftCtrls">
@@ -893,7 +997,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v14</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v15</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -3211,12 +3315,13 @@ const NAMED = [
 ];
 /* As 6 cores oficiais. Uma por capitao, sem repetir: acabou a discussao de
    "azul escuro x azul claro" na hora de cada um pegar a propria camisa. */
+/* Quatro cores pra quatro times. Azul e amarelo sairam depois da pelada em que
+   azul escuro virou preto e amarelo virou verde no meio do jogo: o que sobrou
+   nao se confunde de longe, que e o que importa quando a bola esta rolando. */
 const CORES = [
   ['Preto',   '#171717'],
   ['Branco',  '#F4F1E8'],
-  ['Azul',    '#1F63C8'],
   ['Vermelho','#C6302C'],
-  ['Amarelo', '#EFC021'],
   ['Verde',   '#2E9C46']
 ];
 const SEM_COR = '#B4AC98';
@@ -3290,7 +3395,7 @@ const TURN_SEC = 60;
 
 function blank(){
   return { v:0, ts:0, by:'', host:'', pwh:'', phase:'setup', chat:1, hostOnly:0,
-           crod:0, crev:[], crfim:0,
+           crod:0, crev:[], crfim:0, trocas:[],
            caps:[], players:[], picks:[], order:[], extra:[], dead:[],
            sorteio:[], nSorteios:0, prov:null, clock:0, paused:0, left:0 };
 }
@@ -3404,13 +3509,14 @@ function openWS(){
   /* `since` no reconectar e essencial: sem isso, tudo que passou enquanto o
      WebSocket estava caido (iOS mata a conexao ao trocar de app) e perdido
      pra sempre — foi o que fez o comentario do chat nunca aparecer. */
-  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat,${topic()}-cor/ws?since=10m`); }
+  try{ ws=new WebSocket(`wss://${NTFY}/${topic()},${topic()}-hb,${topic()}-chat,${topic()}-cor,${topic()}-x/ws?since=30m`); }
   catch(e){ setConn('off','sem sincronia'); return; }
   ws.onopen = ()=>{
     setConn('on','ao vivo');
     if(pushQueue||pushPend){pushQueue=false;pushNow();}
     pullChat();     // rede de seguranca: puxa o que passou enquanto estava fora
     pullCores();
+    pullExtras();
     setTimeout(()=>{ try{ bate(true); }catch(e){} },500);
   };
   ws.onmessage = ev=>{
@@ -3420,6 +3526,7 @@ function openWS(){
       if(d.topic===topic()+'-hb'){ notaPresenca(d.message,d.time); return; }
       if(d.topic===topic()+'-chat'){ addChat(JSON.parse(d.message)); return; }
       if(d.topic===topic()+'-cor'){ anotaEscolha(d.message); return; }
+      if(d.topic===topic()+'-x'){ anotaExtra(d.message,d.time); return; }
       merge(JSON.parse(d.message));
     }catch(e){}
   };
@@ -3768,7 +3875,23 @@ function capPickNo(gi){
   for(let i=0;i<=gi;i++) if(S.picks[i].t===t) n++;
   return n;
 }
-const roster=i=>S.picks.map((p,gi)=>({...p,gi})).filter(p=>p.t===i);
+/* O time atual de um jogador: o que o draft deu, e depois as trocas aceitas
+   por cima. `pk.t` continua sendo o registro do draft — a sequencia de escolhas
+   nao pode ser reescrita por uma troca. */
+/* A troca guarda o SLOT da pick (pk.s), não o nome. O nome muda quando o
+   organizador corrige uma pick, e o índice muda quando ele remove outra — o
+   slot é o único que não se mexe, e morre junto com a pick se ela for removida. */
+function timeAtual(pk){
+  let t=pk.t;
+  for(const tr of (S.trocas||[])){
+    if(tr.sa===pk.s && t===tr.a) t=tr.b;
+    else if(tr.sb===pk.s && t===tr.b) t=tr.a;
+  }
+  return t;
+}
+const roster=i=>S.picks.map((p,gi)=>({...p,gi,tv:timeAtual(p)})).filter(p=>p.tv===i);
+const timeDoJogador=nome=>{ const pk=S.picks.find(p=>p.p===nome); return pk?timeAtual(pk):-1; };
+const slotDoJogador=nome=>{ const pk=S.picks.find(p=>p.p===nome); return pk?pk.s:null; };
 const canAct=()=>{
   if(S.paused) return false;
   const t=onClock();
@@ -4294,10 +4417,11 @@ function faltamEscolher(){ return semCorAinda().filter(i=>listaDe(i).length===0)
    só) e tres escolhas sumiriam. Entao cada um publica a sua num canal que só
    acumula, igual ao chat, e quem fecha a rodada grava o RESULTADO uma vez só. */
 let escBuf=new Map();                 // "rodada|capitao" -> [cor1, cor2, ...]
-function chaveEsc(r,c){ return r+'|'+c; }
+function chaveEsc(r,c){ return geracao()+'|'+r+'|'+c; }
 function anotaEscolha(txt){
   let d=null; try{ d=JSON.parse(txt); }catch(e){ return; }
   if(!d||typeof d.c!=='number'||typeof d.r!=='number') return;
+  if((d.g||0)!==geracao()) return;                      // cor de um draft anterior
   let l=d.k;
   if(typeof l==='number') l=[l];                    // formato antigo, um valor só
   if(!Array.isArray(l)) return;
@@ -4330,7 +4454,7 @@ function escolheCor(i){
 function limpaCores(){ publicaLista([]); }
 function publicaLista(l){
   if(ME.cap<0) return;
-  const pacote=JSON.stringify({r:S.crod||1, c:ME.cap, k:l, i:ME.id});
+  const pacote=JSON.stringify({g:geracao(), r:S.crod||1, c:ME.cap, k:l, i:ME.id});
   anotaEscolha(pacote);                            // eco local: a tela responde na hora
   contaMsg();
   fetch(`https://${NTFY}/${topic()}-cor`,{method:'POST',body:pacote}).catch(()=>{});
@@ -4557,6 +4681,342 @@ function renderCores(){
   });
 }
 
+/* ============ CAMPINHO E TROCAS ============
+   Tudo aqui anda por um canal proprio (-x), NAO pelo estado do draft. O estado
+   guarda uma versao só: se dois capitaes mexessem no time deles no mesmo
+   segundo que alguem confirma uma pick, a pick podia sumir. O canal só acumula,
+   entao cada capitao publica o proprio desenho e ninguem atropela ninguem.
+   A unica coisa que entra no estado é a troca JÁ ACEITA, gravada por um
+   aparelho só (quem aceitou), porque ela muda de que time o jogador é. */
+
+/* Seis jogadores de linha por time — o capitao entra como um deles.
+   x,y em % dentro do campinho (y=100 é a defesa, y=0 o ataque). */
+/* Campo deitado: a defesa fica na esquerda e o ataque na direita, que é como
+   se lê uma escalação. Assim o campinho cabe embaixo do nome do capitão sem
+   esticar o card, e os dois times da mesma fileira continuam lado a lado. */
+/* Lado esquerdo em cima, direito embaixo: quem ataca pra direita tem a
+   esquerda dele no alto do desenho. */
+const FORMACOES = [
+  { n:'2-3-1', d:'2 zagueiros · 2 alas · meia · atacante', v:[
+    {r:'ZAG',x:16,y:28},{r:'ZAG',x:16,y:72},
+    {r:'ALE',x:46,y:11},{r:'MEI',x:44,y:50},{r:'ALD',x:46,y:89},
+    {r:'ATA',x:82,y:50} ]},
+  { n:'1-2-2-1', d:'zagueiro · 2 laterais · 2 pontas · atacante', v:[
+    {r:'ZAG',x:14,y:50},
+    {r:'LE',x:36,y:12},{r:'LD',x:36,y:88},
+    {r:'PE',x:62,y:12},{r:'PD',x:62,y:88},
+    {r:'ATA',x:84,y:50} ]},
+  { n:'1-3-1-1', d:'zagueiro · 2 alas e volante na mesma linha · meia · atacante', v:[
+    {r:'ZAG',x:15,y:50},
+    {r:'ALE',x:42,y:11},{r:'VOL',x:40,y:50},{r:'ALD',x:42,y:89},
+    {r:'MEI',x:64,y:50},{r:'ATA',x:85,y:50} ]}
+];
+const VAGAS = 6;
+
+/* capitao -> {f:formacao, m:{jogador:vaga}} */
+let escalacao=new Map();
+function anotaExtra(txt,tsrv){
+  let d=null; try{ d=JSON.parse(txt); }catch(e){ return; }
+  if(!d||typeof d!=='object') return;
+  if(d.k==='pos'){
+    if(typeof d.c!=='number'||d.c<0||d.c>3) return;
+    if((d.g||0)!==geracao()) return;                    // e de um draft anterior
+    const f=Number.isInteger(d.f)&&d.f>=0&&d.f<FORMACOES.length?d.f:0;
+    const m={};
+    if(d.m&&typeof d.m==='object'){
+      for(const nome of Object.keys(d.m)){
+        const v=d.m[nome];
+        if(Number.isInteger(v)&&v>=0&&v<VAGAS) m[String(nome)]=v;
+      }
+    }
+    const anterior=escalacao.get(d.c);
+    const quando=Number(d.t)||Number(tsrv)||0;
+    if(anterior && (anterior.q||0)>quando) return;      // chegou fora de ordem
+    escalacao.set(d.c,{f,m,q:quando});
+    redesenhaLogo();
+    return;
+  }
+  anotaTroca(d,tsrv);
+  redesenhaLogo();
+}
+/* Mensagem do canal nao mexe no estado do draft, entao nada redesenhava
+   sozinho: a proposta chegava e a tela do outro capitao ficava igual. */
+let redrawTimer=null;
+function redesenhaLogo(){
+  clearTimeout(redrawTimer);
+  redrawTimer=setTimeout(()=>{
+    try{ if(S.phase==='draft') renderDraft(); }catch(e){}
+    try{ renderChat(); }catch(e){}
+  },120);
+}
+/* ===== trocas entre capitaes =====
+   A negociacao (proposta e resposta) anda pelo canal, que só acumula. Só a
+   troca ACEITA entra no estado do draft, gravada por um aparelho só — quem
+   aceitou — porque ela muda de que time o jogador é. */
+const TROCA_VALE = 4*60*1000;        // proposta esfria em 4 minutos
+let ofertas=new Map();               // id -> {de,pa,para,pb,t}
+let respostas=new Map();             // id -> {ok,t}
+function anotaTroca(d,tsrv){
+  if((d.g||0)!==geracao()) return;                       // sobra de draft anterior
+  if(d.k==='of'){
+    if(typeof d.de!=='number'||typeof d.para!=='number'||!d.pa||!d.pb||!d.id) return;
+    if(d.de===d.para) return;
+    if(!ofertas.has(d.id)) ofertas.set(d.id,{de:d.de,pa:String(d.pa),para:d.para,pb:String(d.pb),t:Number(d.t)||Number(tsrv)*1000||Date.now()});
+    return;
+  }
+  if(d.k==='re'){
+    if(!d.id) return;
+    if(!respostas.has(d.id)) respostas.set(d.id,{ok:d.ok?1:0,t:Number(d.t)||Date.now()});
+    return;
+  }
+}
+function mandaExtra(pacote){
+  contaMsg();
+  fetch(`https://${NTFY}/${topic()}-x`,{method:'POST',body:JSON.stringify(pacote)}).catch(()=>{});
+}
+const jaTrocado = id => (S.trocas||[]).some(x=>x.id===id);
+/* proposta viva: ninguem respondeu, nao venceu, e os dois jogadores continuam
+   onde estavam quando a proposta saiu */
+function ofertaViva(id){
+  const o=ofertas.get(id); if(!o) return null;
+  if(respostas.has(id)||jaTrocado(id)) return null;
+  if(Date.now()-o.t>TROCA_VALE) return null;
+  if(timeDoJogador(o.pa)!==o.de || timeDoJogador(o.pb)!==o.para) return null;
+  return o;
+}
+const minhasOfertas = () => [...ofertas.keys()].filter(id=>{ const o=ofertaViva(id); return o&&o.de===ME.cap; });
+const ofertasPraMim = () => [...ofertas.keys()].filter(id=>{ const o=ofertaViva(id); return o&&o.para===ME.cap; });
+
+function proporTroca(meuJogador,jogadorDele){
+  if(ME.cap<0||S.phase!=='draft') return;
+  const dono=timeDoJogador(jogadorDele);
+  if(timeDoJogador(meuJogador)!==ME.cap||dono<0||dono===ME.cap) return;
+  const id=ME.id.slice(0,4)+'-'+Date.now().toString(36);
+  const pacote={k:'of', g:geracao(), id, de:ME.cap, pa:meuJogador, para:dono, pb:jogadorDele, t:Date.now()};
+  anotaTroca(pacote,0);
+  mandaExtra(pacote);
+  trocaAberta=false; trocaMeu=null; trocaDele=null;
+  flash(`⇄ Proposta enviada pro ${S.caps[dono].n}: ${meuJogador} pelo ${jogadorDele}.`,5000);
+  renderDraft();
+}
+function respondeTroca(id,ok){
+  const o=ofertaViva(id);
+  if(!o||o.para!==ME.cap) return;
+  const pacote={k:'re', g:geracao(), id, ok:ok?1:0, t:Date.now()};
+  anotaTroca(pacote,0);
+  mandaExtra(pacote);
+  if(ok) aplicaTroca(id,o);
+  renderDraft();
+}
+/* Só quem aceita grava. Se a gravacao se perder numa colisao com uma pick,
+   tenta de novo — a troca nao pode sumir em silencio. */
+function aplicaTroca(id,o){
+  const sa=slotDoJogador(o.pa), sb=slotDoJogador(o.pb);
+  if(sa===null||sb===null) return;
+  const reg={id, a:o.de, pa:o.pa, sa, b:o.para, pb:o.pb, sb, t:Date.now()};
+  commit(st=>{ st.trocas=(st.trocas||[]).concat([reg]); });
+  /* quem trocou de time volta pro banco dos dois lados */
+  [[o.de,o.pa],[o.para,o.pb]].forEach(([c,nome])=>{
+    const e=escalacao.get(c);
+    if(e&&e.m&&e.m[nome]!==undefined){ const novo={f:e.f,m:{...e.m},q:Date.now()}; delete novo.m[nome]; escalacao.set(c,novo); }
+  });
+  if(podeEscalar(o.para)) publicaEscala(o.para);
+  let tentativas=0;
+  const conferir=()=>{
+    if(jaTrocado(id)||tentativas>=3) return;
+    tentativas++;
+    commit(st=>{ if(!(st.trocas||[]).some(x=>x.id===id))
+      st.trocas=(st.trocas||[]).concat([reg]); });
+    setTimeout(conferir,2500);
+  };
+  setTimeout(conferir,2500);
+}
+let trocaAberta=false, trocaMeu=null, trocaDele=null;
+function abreTroca(){ trocaAberta=true; trocaMeu=null; trocaDele=null; renderDraft();
+  try{ document.getElementById('trocaPainel').scrollIntoView({block:'center'}); }catch(e){} }
+function fechaTroca(){ trocaAberta=false; trocaMeu=null; trocaDele=null; renderDraft(); }
+function escolheMeu(n){ trocaMeu = trocaMeu===n?null:n; renderDraft(); }
+function escolheDele(n){ trocaDele = trocaDele===n?null:n; renderDraft(); }
+function enviaTroca(){ if(trocaMeu&&trocaDele) proporTroca(trocaMeu,trocaDele); }
+
+function renderTrocas(){
+  const bt=document.getElementById('btnTroca');
+  const podeTrocar = ME.cap>=0 && S.phase==='draft' && !editMode && S.picks.length>=2;
+  if(bt) bt.classList.toggle('hidden',!podeTrocar);
+  const pn=document.getElementById('trocaPainel');
+  if(!pn) return;
+  pn.classList.toggle('hidden',!(trocaAberta&&podeTrocar));
+
+  /* propostas chegando pra mim, e as minhas esperando resposta */
+  const cx=document.getElementById('caixaOfertas'); cx.innerHTML='';
+  if(ME.cap>=0 && S.phase==='draft'){
+    ofertasPraMim().forEach(id=>{
+      const o=ofertas.get(id);
+      const d=document.createElement('div'); d.className='oferta';
+      d.innerHTML='<h3>⇄ Proposta de troca</h3><p></p><div class="row"></div>';
+      d.querySelector('p').textContent =
+        `${(S.caps[o.de]||{}).n} te oferece ${o.pa} e quer o ${o.pb} do seu time.`;
+      const r=d.querySelector('.row');
+      const sim=document.createElement('button'); sim.className='ok'; sim.textContent='✅ Aceitar';
+      sim.onclick=()=>respondeTroca(id,1);
+      const nao=document.createElement('button'); nao.className='sm'; nao.textContent='✕ Recusar';
+      nao.onclick=()=>respondeTroca(id,0);
+      r.append(sim,nao); cx.appendChild(d);
+    });
+    minhasOfertas().forEach(id=>{
+      const o=ofertas.get(id);
+      const d=document.createElement('div'); d.className='minhaOferta';
+      d.textContent=`⏳ Esperando ${(S.caps[o.para]||{}).n} responder: ${o.pa} pelo ${o.pb}.`;
+      cx.appendChild(d);
+    });
+  }
+  if(!trocaAberta||!podeTrocar) return;
+
+  const meus=roster(ME.cap).map(p=>p.p);
+  const outros=S.caps.map((c,i)=>i).filter(i=>i!==ME.cap)
+    .map(i=>({i, nomes:roster(i).map(p=>p.p)})).filter(x=>x.nomes.length);
+  const cm=document.getElementById('trocaMeus'); cm.innerHTML='';
+  const rot=document.createElement('div'); rot.className='rot'; rot.textContent='seu time — quem você oferece';
+  cm.appendChild(rot);
+  if(!meus.length){ const v=document.createElement('span'); v.className='rot'; v.textContent='você ainda não tem jogador pra oferecer'; cm.appendChild(v); }
+  meus.forEach(n=>{
+    const b=document.createElement('button'); b.className='tl'+(trocaMeu===n?' sel':'');
+    b.textContent=n; b.onclick=()=>escolheMeu(n); cm.appendChild(b);
+  });
+  const co=document.getElementById('trocaOutros'); co.innerHTML='';
+  outros.forEach(({i,nomes})=>{
+    const r2=document.createElement('div'); r2.className='rot';
+    r2.textContent=`${(S.caps[i]||{}).n} — ${teamLabel(i)}`;
+    co.appendChild(r2);
+    nomes.forEach(n=>{
+      const b=document.createElement('button'); b.className='tl'+(trocaDele===n?' sel':'');
+      const dt=document.createElement('span'); dt.className='dt'; dt.style.background=hexTime(S.caps[i]);
+      b.appendChild(dt); b.append(document.createTextNode(n));
+      b.onclick=()=>escolheDele(n); co.appendChild(b);
+    });
+  });
+  const en=document.getElementById('trocaEnviar');
+  en.disabled=!(trocaMeu&&trocaDele);
+  document.getElementById('trocaPasso').textContent = trocaMeu&&trocaDele
+    ? `Você dá ${trocaMeu} e recebe ${trocaDele}. Confirme pra mandar a proposta.`
+    : (trocaMeu ? 'Agora toque no jogador que você quer receber.'
+                : 'Toque num jogador SEU e depois num jogador de outro time.');
+}
+
+/* linha do tempo das trocas, pra misturar no chat */
+function eventosTroca(){
+  const ev=[];
+  for(const [id,o] of ofertas){
+    const nomeA=(S.caps[o.de]||{}).n||'?', nomeB=(S.caps[o.para]||{}).n||'?';
+    ev.push({t:o.t, id, tipo:'of', m:`${nomeA} ofereceu ${o.pa} pro ${nomeB} em troca de ${o.pb}`});
+    const r=respostas.get(id);
+    if(r) ev.push({t:r.t, id, tipo:r.ok?'sim':'nao',
+      m:r.ok ? `${nomeB} ACEITOU: ${o.pa} vai pro ${nomeB} e ${o.pb} vai pro ${nomeA}`
+             : `${nomeB} recusou a troca de ${o.pa} por ${o.pb}`});
+  }
+  return ev.sort((a,b)=>a.t-b.t);
+}
+async function pullExtras(){
+  try{
+    const r=await fetch(`https://${NTFY}/${topic()}-x/json?poll=1&since=12h`,{cache:'no-store'});
+    if(!r.ok) return;
+    const t=await r.text();
+    for(const line of t.split('\n')){
+      if(!line.trim()) continue;
+      try{ const ev=JSON.parse(line); if(ev.event==='message'&&ev.message) anotaExtra(ev.message,ev.time); }catch(e){}
+    }
+  }catch(e){}
+}
+/* Num "Novo draft" o codigo da sala continua o mesmo, e o ntfy repete as
+   mensagens das ultimas horas. Sem carimbar a geracao, as cores escolhidas e
+   os campinhos do draft anterior voltavam como se fossem deste. */
+const geracao = () => (S.nSorteios||0);
+function limpaCanais(){
+  escalacao.clear(); ofertas.clear(); respostas.clear();
+  try{ escBuf.clear(); }catch(e){}
+  escalaSel=null; nomeNoCampo=null;
+  trocaAberta=false; trocaMeu=null; trocaDele=null;
+  trocasVistas=new Set(); trocaPrimeira=true;
+}
+const minhaEscala = c => escalacao.get(c) || {f:0,m:{}};
+function formacaoDe(c){ const e=minhaEscala(c); return FORMACOES[e.f]||FORMACOES[0]; }
+/* quem esta em cada vaga, ignorando nome que ja nao e do time */
+function campoDe(c){
+  const e=minhaEscala(c);
+  const meu=new Set([ (S.caps[c]||{}).n, ...roster(c).map(p=>p.p) ].filter(Boolean));
+  const vagas=new Array(VAGAS).fill(null);
+  const usados=new Set();
+  for(const nome of Object.keys(e.m||{})){
+    if(!meu.has(nome)) continue;                 // saiu do time (troca, correcao)
+    const v=e.m[nome];
+    if(vagas[v]) continue;                       // duas pessoas na mesma vaga: vale a 1a
+    vagas[v]=nome; usados.add(nome);
+  }
+  const banco=[...meu].filter(n=>!usados.has(n));
+  return {vagas,banco};
+}
+/* Publica o desenho inteiro de uma vez: assim a ultima mensagem do capitao
+   vale sozinha e nao existe merge pra dar errado. */
+let posTimer=null;
+function publicaEscala(c){
+  clearTimeout(posTimer);
+  posTimer=setTimeout(()=>{
+    const e=minhaEscala(c);
+    const pacote=JSON.stringify({k:'pos', g:geracao(), c, f:e.f, m:e.m, t:Date.now()});
+    contaMsg();
+    fetch(`https://${NTFY}/${topic()}-x`,{method:'POST',body:pacote}).catch(()=>{});
+  },800);
+}
+function podeEscalar(c){ return ME.cap===c && ME.cap>=0; }
+function mexeEscala(c,fn){
+  if(!podeEscalar(c)) return;
+  const e=minhaEscala(c);
+  const novo={f:e.f, m:{...e.m}, q:Date.now()};
+  fn(novo);
+  escalacao.set(c,novo);
+  publicaEscala(c);
+  renderDraft();
+}
+function trocaFormacao(c,f){ mexeEscala(c,e=>{ e.f=f; }); }
+let escalaSel=null;                  // {c, nome} selecionado pra mover
+let nomeNoCampo=null, nomeTimer=null; // balao com o nome de quem foi tocado
+function mostraNomeNoCampo(c,k,nome,pos){
+  nomeNoCampo={c,k,nome,pos};
+  clearTimeout(nomeTimer);
+  nomeTimer=setTimeout(()=>{ nomeNoCampo=null; try{ renderDraft(); }catch(e){} },2800);
+  try{ renderDraft(); }catch(e){}
+}
+function tocaJogador(c,nome){
+  if(!podeEscalar(c)) return;
+  escalaSel = (escalaSel&&escalaSel.c===c&&escalaSel.nome===nome) ? null : {c,nome};
+  renderDraft();
+}
+function tocaVaga(c,v){
+  if(!podeEscalar(c)) return;
+  const sel=escalaSel;
+  const {vagas}=campoDe(c);
+  if(!sel||sel.c!==c){
+    if(vagas[v]) tocaJogador(c,vagas[v]);
+    return;
+  }
+  escalaSel=null;
+  mexeEscala(c,e=>{
+    const ocupante=vagas[v];
+    const antes=e.m[sel.nome];
+    if(ocupante&&ocupante!==sel.nome){
+      if(antes===undefined) delete e.m[ocupante];   // vinha do banco: o outro volta
+      else e.m[ocupante]=antes;                     // troca de lugar
+    }
+    e.m[sel.nome]=v;
+  });
+}
+function mandaProBanco(c){
+  const sel=escalaSel;
+  if(!sel||sel.c!==c) return;
+  escalaSel=null;
+  mexeEscala(c,e=>{ delete e.m[sel.nome]; });
+}
+
 /* ================= DRAFT ================= */
 let lastAdded=null, autoLock=false;
 let poolAberto=null;        // null = decide pelo papel; true/false = o usuario mandou
@@ -4571,6 +5031,117 @@ function toggleTime(i){
   renderDraft();
 }
 /* Muita gente nao descobria que dava pra tocar no time. Agora tem o botao. */
+let verCampo=false, timesAntesDoCampo=null;
+function modoCampo(){
+  verCampo=!verCampo;
+  if(verCampo){
+    /* guarda quais times estavam abertos: ao fechar o campinho a tela tem que
+       voltar exatamente como estava, e nao com tudo escancarado */
+    timesAntesDoCampo={...timesAbertos};
+    for(let i=0;i<(S.caps||[]).length;i++) timesAbertos[i]=true;
+  } else if(timesAntesDoCampo){
+    timesAbertos={...timesAntesDoCampo};
+    timesAntesDoCampo=null;
+  }
+  escalaSel=null; nomeNoCampo=null;
+  document.body.classList.toggle('modoCampo',verCampo);
+  renderDraft();
+}
+/* desenha o campinho de um time dentro do card dele */
+function montaCampo(i,dest){
+  const c=S.caps[i]; if(!c) return;
+  const meu=podeEscalar(i);
+  const {vagas,banco}=campoDe(i);
+  const form=formacaoDe(i);
+  const wrap=document.createElement('div'); wrap.className='campo';
+
+  if(meu){
+    const fr=document.createElement('div'); fr.className='formRow';
+    FORMACOES.forEach((f,k)=>{
+      const b=document.createElement('button');
+      b.className='sm'+(minhaEscala(i).f===k?' on':'');
+      b.textContent=f.n; b.title=f.d;
+      b.onclick=(ev)=>{ ev.stopPropagation(); trocaFormacao(i,k); };
+      fr.appendChild(b);
+    });
+    wrap.appendChild(fr);
+  }
+
+  const g=document.createElement('div'); g.className='gramado';
+  g.innerHTML='<div class="area cima"></div><div class="area baixo"></div>';
+  const selAqui = escalaSel&&escalaSel.c===i ? escalaSel.nome : null;
+  form.v.forEach((v,k)=>{
+    const quem=vagas[k];
+    const b=document.createElement('button');
+    b.className='vaga'+(quem?' cheia':'')+(quem&&quem===selAqui?' sel':'')+(selAqui&&!quem?' alvo':'');
+    b.style.left=v.x+'%'; b.style.top=v.y+'%';
+    const bol=document.createElement('span'); bol.className='bolha';
+    bol.textContent = quem ? iniciais(quem) : v.r;
+    if(quem){
+      /* plaquinha na cor da camisa do time, como num quadro tatico */
+      const cor=hexTime(c);
+      bol.style.background=cor;
+      bol.style.color = luzDe(cor)>0.55 ? '#1B2A20' : '#FFFFFF';
+    }
+    b.appendChild(bol);
+    b.title = quem ? quem+' — '+v.r : v.r;
+    /* todo mundo pode tocar pra ver de quem é a bolinha; só o dono move */
+    b.onclick=(ev)=>{ ev.stopPropagation();
+      if(quem) mostraNomeNoCampo(i,k,quem,v.r);
+      if(meu) tocaVaga(i,k);
+    };
+    g.appendChild(b);
+  });
+  /* balaozinho com o nome de quem foi tocado */
+  if(nomeNoCampo && nomeNoCampo.c===i){
+    const v=form.v[nomeNoCampo.k];
+    if(v){
+      const bal=document.createElement('div'); bal.className='balao';
+      bal.style.left=v.x+'%'; bal.style.top=(v.y-6)+'%';
+      bal.innerHTML='<small></small>';
+      bal.querySelector('small').textContent=nomeNoCampo.pos;
+      bal.insertBefore(document.createTextNode(nomeNoCampo.nome),bal.firstChild);
+      g.appendChild(bal);
+    }
+  }
+  wrap.appendChild(g);
+
+  const bk=document.createElement('div');
+  bk.className='banco'+(selAqui&&minhaEscala(i).m[selAqui]!==undefined?' alvo':'');
+  if(!banco.length){ const v=document.createElement('span'); v.className='vazio'; v.textContent='banco vazio'; bk.appendChild(v); }
+  banco.forEach(nome=>{
+    const b=document.createElement('button');
+    b.className='bt'+(nome===selAqui?' sel':'');
+    b.textContent = nome===c.n ? '© '+nome : nome;
+    if(nome!==selAqui){
+      const cor=hexTime(c);
+      b.style.background=cor;
+      b.style.color = luzDe(cor)>0.55 ? '#1B2A20' : '#FFFFFF';
+    }
+    b.disabled=!meu;
+    b.onclick=(ev)=>{ ev.stopPropagation(); tocaJogador(i,nome); };
+    bk.appendChild(b);
+  });
+  bk.onclick=(ev)=>{ ev.stopPropagation(); if(selAqui) mandaProBanco(i); };
+  wrap.appendChild(bk);
+
+  if(meu){
+    const d=document.createElement('div'); d.className='dicaCampo';
+    d.textContent = selAqui
+      ? `${primeiroNome(selAqui)} escolhido — toque numa posição, ou no banco pra tirar.`
+      : 'Toque num jogador e depois numa posição.';
+    wrap.appendChild(d);
+  }
+  dest.appendChild(wrap);
+}
+const primeiroNome = n => String(n||'').trim().split(/\s+/)[0];
+function iniciais(n){
+  const p=String(n||'').trim().split(/\s+/).filter(Boolean);
+  /* com sobrenome: as duas iniciais. Sem: as duas primeiras letras, que
+     separam Ricardo de Rodrigo melhor do que um "R" sozinho. */
+  if(p.length>1) return ((p[0][0]||'')+(p[1][0]||'')).toUpperCase();
+  return String(p[0]||'').slice(0,2).toUpperCase();
+}
 function todosOsTimes(){
   const n=(S.caps||[]).length;
   const todosAbertos = n>0 && (S.caps||[]).every((c,i)=>!!timesAbertos[i]);
@@ -4724,7 +5295,19 @@ function mostraToast(m){
   setTimeout(()=>{ d.classList.add('saindo'); setTimeout(()=>d.remove(),320); },5000);
 }
 
+let trocasVistas=new Set(), trocaPrimeira=true;
+function toastDasTrocas(){
+  const ev=eventosTroca();
+  const novos=ev.filter(x=>!trocasVistas.has(x.tipo+x.id));
+  novos.forEach(x=>trocasVistas.add(x.tipo+x.id));
+  if(trocaPrimeira){ trocaPrimeira=false; return; }   // ao entrar, nao dispara o historico
+  if(S.phase!=='draft') return;
+  novos.filter(x=>Date.now()-x.t<90000).forEach(x=>{
+    try{ mostraToast({n:(x.tipo==='of'?'⇄ troca':(x.tipo==='sim'?'✅ troca':'✕ troca')), m:' '+x.m}); }catch(e){}
+  });
+}
 function renderChat(){
+  try{ toastDasTrocas(); }catch(e){}
   const card=document.getElementById('chatCard');
   const fab=document.getElementById('chatFab');
   const naSala = !!ME.room && S.phase==='draft';
@@ -4759,8 +5342,19 @@ function renderChat(){
   const log=document.getElementById('chatLog');
   const perto = log.scrollHeight-log.scrollTop-log.clientHeight < 60;
   log.innerHTML='';
-  if(!chatBuf.length) log.innerHTML='<div class="sys">ninguém falou nada ainda</div>';
-  else chatBuf.forEach(m=>{
+  /* as trocas entram na mesma linha do tempo da zoeira: e o lugar onde todo
+     mundo ja esta olhando, e nao custa espaco novo na tela */
+  const linha=[...chatBuf.map(m=>({t:m.t||0,tipo:'msg',m})), ...eventosTroca()]
+    .sort((a,b)=>(a.t||0)-(b.t||0));
+  if(!linha.length) log.innerHTML='<div class="sys">ninguém falou nada ainda</div>';
+  else linha.forEach(x=>{
+    if(x.tipo!=='msg'){
+      const d=document.createElement('div');
+      d.className='troca'+(x.tipo==='sim'?' sim':(x.tipo==='nao'?' nao':''));
+      d.textContent=(x.tipo==='of'?'⇄ ':(x.tipo==='sim'?'✅ ':'✕ '))+x.m;
+      log.appendChild(d); return;
+    }
+    const m=x.m;
     const d=document.createElement('div');
     d.className='msg'+(m.id===ME.id?' mine':'');
     const hh=new Date(m.t||0);
@@ -4934,6 +5528,9 @@ function editPick(gi){
 }
 function editSubstitute(name){
   if(ME.role!=='host'||editSel===null) return;
+  name=String(name||'').trim();
+  /* nome vazio ou ja escolhido deixaria um buraco no time */
+  if(!name||S.picks.some((p,i)=>i!==editSel&&p.p===name)) return;
   const gi=editSel; editSel=null;
   commit(st=>{ st.picks[gi]={...st.picks[gi], p:name, auto:0, fix:1}; });
 }
@@ -4979,7 +5576,9 @@ function resetAll(){
   if(ME.role!=='host'){ alert('Só o organizador pode começar um draft novo.'); return; }
   if(!confirm('Começar um draft novo? Os picks atuais serão apagados.')) return;
   commit(st=>{ st.picks=[]; st.prov=null; st.phase='setup'; st.clock=0;
-               st.extra=[]; st.dead=[]; st.paused=0; st.left=0; });
+               st.extra=[]; st.dead=[]; st.paused=0; st.left=0;
+               st.trocas=[]; st.crev=[]; st.crfim=0; });
+  limpaCanais();
 }
 
 /* 13. capitão que trocou de aparelho recupera o time */
@@ -5169,7 +5768,7 @@ function renderDraft(){
      repete o resumo final. Some com as duas — o organizador recupera a lista
      ao entrar no modo correcao. */
   document.getElementById('colPool').classList.toggle('hidden', done && !editMode);
-  document.getElementById('teams').classList.toggle('hidden', done);
+  document.getElementById('teams').classList.toggle('hidden', done && !verCampo);
 
   const abrirLista = poolAberto===null ? souAtor : poolAberto;
   document.getElementById('poolHead').classList.toggle('fechado',!abrirLista);
@@ -5221,9 +5820,17 @@ function renderDraft(){
     const todosAbertos = n>0 && caps.every((c,i)=>!!timesAbertos[i]);
     bt.textContent = todosAbertos ? '🙈 Fechar todos' : '👁 Abrir todos';
     const bb=document.getElementById('barraTimes');
-    if(bb) bb.classList.toggle('hidden', done && !editMode);
+    if(bb) bb.classList.toggle('hidden', done && !editMode && !verCampo);
     const dica=document.getElementById('dicaTimes');
     if(dica) dica.textContent = todosAbertos ? 'toque num time pra fechar só ele' : 'toque num time pra ver os nomes';
+  }
+  const bc=document.getElementById('btnCampo');
+  if(bc){
+    bc.textContent = verCampo ? '📋 Ver lista' : '⚽ Ver campinho';
+    bc.className = 'sm'+(verCampo?' ok':'');
+    const bcb=document.getElementById('barraCampo');
+    if(bcb) bcb.classList.toggle('hidden', editMode);
+    if(done&&verCampo) bc.textContent='📋 Esconder campinho';
   }
   const box=document.getElementById('teams'); box.innerHTML='';
   caps.forEach((c,i)=>{
@@ -5260,7 +5867,10 @@ function renderDraft(){
       const tg=document.createElement('span'); tg.className='tag'; tg.textContent='provisório';
       li.appendChild(tg); ol.appendChild(li);
     }
-    d.append(head,ol); box.appendChild(d);
+    d.appendChild(head);
+    if(verCampo && !editMode) montaCampo(i,d);
+    else d.appendChild(ol);
+    box.appendChild(d);
   });
 
   const soHost = ME.role!=='host';
@@ -5289,7 +5899,7 @@ function renderDraft(){
     : 'Você comanda: escolhe por qualquer capitão que caiu, corrige pick já feita, desfaz e reinicia. '+
       'O cronômetro roda no seu aparelho. · '+msgsHoje()+' mensagens hoje (limite grátis ~250 por rede).';
   renderResumo();
-  try{ renderVolta(); conferMinhaEscolha(); avisaMinhaVez(); }catch(e){}
+  try{ renderVolta(); conferMinhaEscolha(); avisaMinhaVez(); renderTrocas(); }catch(e){}
 }
 
 function renderResumo(){
