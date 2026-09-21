@@ -338,6 +338,20 @@
   }
   .trocaLista .tl .dt{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);flex:none}
   .trocaLista .tl.sel{background:var(--gold);outline:3px solid var(--ink);outline-offset:1px}
+  .trocaLista .tl.off{opacity:.35;box-shadow:none}
+  /* ===== janela de trocas (o mercado, antes do resumo) ===== */
+  #mercadoCard{background:var(--gold);border:3px solid var(--ink);border-radius:10px;
+    box-shadow:var(--sh);padding:14px 17px;margin-bottom:18px}
+  #mercadoCard h2{font-family:'Anton',sans-serif;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase}
+  #mercadoCard p{font-size:.85rem;font-weight:700;line-height:1.4;margin-top:4px}
+  #mercRelogio{font-family:'Anton',sans-serif;font-size:1.9rem;line-height:1;letter-spacing:.02em;flex:none}
+  #mercRelogio.negociando{font-size:.9rem;max-width:120px;text-align:right;line-height:1.15}
+  #mercRelogio.warn{color:var(--red)}
+  .mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .mchip{display:inline-flex;align-items:center;gap:5px;background:var(--cream-2);
+    border:2.5px solid var(--ink);border-radius:20px;padding:4px 10px;font-size:.76rem;font-weight:800}
+  .mchip .dt{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);flex:none}
+  .mchip.ok{background:var(--green);color:#fff}
   .trocaLista .rot{width:100%;font-family:'Anton',sans-serif;font-size:.66rem;letter-spacing:.1em;
     text-transform:uppercase;color:var(--ink-soft);margin-top:4px}
   .oferta{
@@ -844,6 +858,20 @@
       <p>Confere o resumo abaixo e manda no grupo.</p>
     </div>
 
+    <div id="mercadoCard" class="hidden">
+      <div class="row between">
+        <h2>🔁 Janela de trocas</h2>
+        <div id="mercRelogio">0:30</div>
+      </div>
+      <p id="mercTxt">Última chance de negociar antes do resumo.</p>
+      <div class="mchips" id="mercChips"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="ok hidden" id="mercPronto" onclick="fechaMeuTime()">✅ Time fechado</button>
+        <button class="sm hidden" id="mercPropor" onclick="abreTroca()">⇄ Propor troca</button>
+        <button class="sm plain hidden" id="mercForca" onclick="forcaResumo()">🏁 Ir pro resumo</button>
+      </div>
+    </div>
+
     <div id="resumoCard" class="hidden">
       <div class="row between">
         <h2 class="ttl">🏆 Resumo final dos times</h2>
@@ -997,7 +1025,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v15</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v16</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -3395,7 +3423,7 @@ const TURN_SEC = 60;
 
 function blank(){
   return { v:0, ts:0, by:'', host:'', pwh:'', phase:'setup', chat:1, hostOnly:0,
-           crod:0, crev:[], crfim:0, trocas:[],
+           crod:0, crev:[], crfim:0, trocas:[], mfim:0,
            caps:[], players:[], picks:[], order:[], extra:[], dead:[],
            sorteio:[], nSorteios:0, prov:null, clock:0, paused:0, left:0 };
 }
@@ -3513,7 +3541,7 @@ function openWS(){
   catch(e){ setConn('off','sem sincronia'); return; }
   ws.onopen = ()=>{
     setConn('on','ao vivo');
-    if(pushQueue||pushPend){pushQueue=false;pushNow();}
+    if(pushQueue||pushPend||pushSujo){pushQueue=false;pushNow();}
     pullChat();     // rede de seguranca: puxa o que passou enquanto estava fora
     pullCores();
     pullExtras();
@@ -3633,7 +3661,13 @@ setInterval(()=>bate(false),PING_MS);
 const LIMITE_ESTADO=4000, LIMITE_DURO=4090;
 function bytesDe(txt){ try{ return new TextEncoder().encode(txt).length; }catch(e){ return txt.length; } }
 
-let pushPend=false, reenvioTimer=null, pushando=false;
+/* `pushPend` = o último envio NÃO passou (é o que acende o aviso de "sem rede").
+   `pushSujo` = passou, mas nasceu estado novo enquanto o envio estava no ar.
+   Eram a mesma variável, e isso escondia um buraco: o envio em voo terminava
+   com sucesso e zerava a marca deixada pela pick seguinte, que ficava presa no
+   aparelho até a próxima jogada mexer no estado. Na ÚLTIMA pick do draft não
+   havia próxima — e ninguém via o draft fechar. */
+let pushPend=false, pushSujo=false, reenvioTimer=null, pushando=false;
 let chatCedeAte=0;
 let msgsEnviadas=0;        // nesta sessao
 let cotaEstourada=false;   // 429 de cota diaria: nao e coisa de segundos
@@ -3671,7 +3705,7 @@ function chatCedeAVez(){ chatCedeAte=Date.now()+8000; try{ renderChat(); }catch(
 
 async function pushNow(){
   clearTimeout(pushTimer); pushTimer=null;
-  if(pushando){ pushPend=true; return; }
+  if(pushando){ pushSujo=true; return; }
   pushando=true;
   try{
     const body=JSON.stringify(S);
@@ -3679,7 +3713,7 @@ async function pushNow(){
     if(tam>=LIMITE_ESTADO) flash(`⚠️ Estado em ${tam} bytes, perto do limite de 4096. Encurte os nomes da lista.`);
     if(tam>=LIMITE_DURO){
       setConn('off','estado grande demais — encurte os nomes');
-      pushPend=false; return;
+      pushPend=false; pushSujo=false; return;
     }
     const esperas=[900,3000,6000];
     for(let i=0;i<3;i++){
@@ -3707,7 +3741,9 @@ async function pushNow(){
     setConn('off', cotaEstourada ? 'limite diário do serviço estourou' : 'não enviou ainda — tentando de novo');
   } finally {
     pushando=false;
-    if(pushPend) agendaReenvio();
+    /* estado novo apareceu enquanto este envio estava no ar: manda de novo já */
+    if(pushSujo){ pushSujo=false; setTimeout(()=>{ if(ME.room) pushNow(); },80); }
+    else if(pushPend) agendaReenvio();
   }
 }
 function agendaReenvio(){
@@ -3762,7 +3798,7 @@ function merge(inc){
   /* durante a disputa de cores o aviso da ordem so atrapalharia: ele volta
      quando o draft comeca de verdade */
   const sorteioNovo = (inc.nSorteios||0) > (S.nSorteios||0) && inc.phase==='draft';
-  S=inc; syncRole(); saveLocal(); route();
+  S=inc; syncRole(); try{ podaEscalacoes(); }catch(e){} saveLocal(); route();
   if(comecou||sorteioNovo){
     try{ flash('🎲 Ordem sorteada: '+textoOrdem()); }catch(e){}
   }
@@ -3881,11 +3917,16 @@ function capPickNo(gi){
 /* A troca guarda o SLOT da pick (pk.s), não o nome. O nome muda quando o
    organizador corrige uma pick, e o índice muda quando ele remove outra — o
    slot é o único que não se mexe, e morre junto com a pick se ela for removida. */
+/* Uma troca leva N jogadores de cada lado (pacote), então o registro guarda
+   LISTAS de slots. `sa`/`sb` no singular é o formato antigo, de sala que já
+   estava rolando quando o app foi atualizado. */
 function timeAtual(pk){
   let t=pk.t;
   for(const tr of (S.trocas||[])){
-    if(tr.sa===pk.s && t===tr.a) t=tr.b;
-    else if(tr.sb===pk.s && t===tr.b) t=tr.a;
+    const la = tr.sas || (tr.sa!==undefined?[tr.sa]:[]);
+    const lb = tr.sbs || (tr.sb!==undefined?[tr.sb]:[]);
+    if(la.indexOf(pk.s)>=0 && t===tr.a) t=tr.b;
+    else if(lb.indexOf(pk.s)>=0 && t===tr.b) t=tr.a;
   }
   return t;
 }
@@ -4004,7 +4045,7 @@ function mostraAuth(){
 function renderRodape(){
   const r=document.getElementById('rodapeLinks');
   // so aparece pra quem esta numa sala, ainda nao e capitao, e com draft por rolar
-  const acabou = S.phase==='draft' && onClock()===null && (S.order||[]).length>0;
+  const acabou = draftAcabou() && !mercadoAberto();
   const faz = !!ME.room && ME.role==='view' && !acabou;
   r.classList.toggle('hidden',!faz);
   if(!faz) document.getElementById('authBox').classList.add('hidden');
@@ -4754,19 +4795,41 @@ function redesenhaLogo(){
    troca ACEITA entra no estado do draft, gravada por um aparelho só — quem
    aceitou — porque ela muda de que time o jogador é. */
 const TROCA_VALE = 4*60*1000;        // proposta esfria em 4 minutos
-let ofertas=new Map();               // id -> {de,pa,para,pb,t}
+const MAX_PACOTE = 3;                // ate 3 de cada lado: mais que isso ninguem acompanha
+let ofertas=new Map();               // id -> {de,pas:[],para,pbs:[],t}
 let respostas=new Map();             // id -> {ok,t}
+let prontos=new Map();               // capitao -> {v,n,t} na janela de trocas
+const listaNomes = ns => ns.join(' + ');
+/* aceita o formato antigo (um jogador de cada lado) e o novo (pacote) */
+function nomesDe(v){
+  if(Array.isArray(v)) return v.map(x=>String(x)).filter(Boolean).slice(0,MAX_PACOTE);
+  return v ? [String(v)] : [];
+}
 function anotaTroca(d,tsrv){
   if((d.g||0)!==geracao()) return;                       // sobra de draft anterior
   if(d.k==='of'){
-    if(typeof d.de!=='number'||typeof d.para!=='number'||!d.pa||!d.pb||!d.id) return;
+    if(typeof d.de!=='number'||typeof d.para!=='number'||!d.id) return;
     if(d.de===d.para) return;
-    if(!ofertas.has(d.id)) ofertas.set(d.id,{de:d.de,pa:String(d.pa),para:d.para,pb:String(d.pb),t:Number(d.t)||Number(tsrv)*1000||Date.now()});
+    const pas=nomesDe(d.pas!==undefined?d.pas:d.pa), pbs=nomesDe(d.pbs!==undefined?d.pbs:d.pb);
+    if(!pas.length||pas.length!==pbs.length) return;     // pacote tem que ser igual dos dois lados
+    if(new Set(pas.concat(pbs)).size!==pas.length+pbs.length) return;
+    if(!ofertas.has(d.id)) ofertas.set(d.id,{de:d.de,pas,para:d.para,pbs,t:Number(d.t)||Number(tsrv)*1000||Date.now()});
     return;
   }
   if(d.k==='re'){
     if(!d.id) return;
     if(!respostas.has(d.id)) respostas.set(d.id,{ok:d.ok?1:0,t:Number(d.t)||Date.now()});
+    return;
+  }
+  /* "time fechado" na janela de trocas: os quatro marcam isso quase juntos,
+     então não pode morar no estado do draft — o último a gravar apagaria os
+     outros três. Vai pelo canal, que só acumula. */
+  if(d.k==='ok'){
+    if(typeof d.c!=='number'||d.c<0||d.c>3) return;
+    const t=Number(d.t)||Number(tsrv)*1000||Date.now();
+    const ant=prontos.get(d.c);
+    if(ant && ant.t>t) return;                           // chegou fora de ordem
+    prontos.set(d.c,{v:d.v?1:0, n:Number(d.n)||0, t});
     return;
   }
 }
@@ -4781,22 +4844,27 @@ function ofertaViva(id){
   const o=ofertas.get(id); if(!o) return null;
   if(respostas.has(id)||jaTrocado(id)) return null;
   if(Date.now()-o.t>TROCA_VALE) return null;
-  if(timeDoJogador(o.pa)!==o.de || timeDoJogador(o.pb)!==o.para) return null;
+  if(o.pas.some(n=>timeDoJogador(n)!==o.de)) return null;
+  if(o.pbs.some(n=>timeDoJogador(n)!==o.para)) return null;
   return o;
 }
-const minhasOfertas = () => [...ofertas.keys()].filter(id=>{ const o=ofertaViva(id); return o&&o.de===ME.cap; });
-const ofertasPraMim = () => [...ofertas.keys()].filter(id=>{ const o=ofertaViva(id); return o&&o.para===ME.cap; });
+const idsVivos = () => [...ofertas.keys()].filter(id=>ofertaViva(id));
+const minhasOfertas = () => idsVivos().filter(id=>ofertas.get(id).de===ME.cap);
+const ofertasPraMim = () => idsVivos().filter(id=>ofertas.get(id).para===ME.cap);
 
-function proporTroca(meuJogador,jogadorDele){
-  if(ME.cap<0||S.phase!=='draft') return;
-  const dono=timeDoJogador(jogadorDele);
-  if(timeDoJogador(meuJogador)!==ME.cap||dono<0||dono===ME.cap) return;
+function proporTroca(meus,deles){
+  if(ME.cap<0||!podeNegociar()) return;
+  if(!meus.length||meus.length!==deles.length||meus.length>MAX_PACOTE) return;
+  if(meus.some(n=>timeDoJogador(n)!==ME.cap)) return;
+  const dono=timeDoJogador(deles[0]);
+  if(dono<0||dono===ME.cap) return;
+  if(deles.some(n=>timeDoJogador(n)!==dono)) return;     // pacote e com UM time só
   const id=ME.id.slice(0,4)+'-'+Date.now().toString(36);
-  const pacote={k:'of', g:geracao(), id, de:ME.cap, pa:meuJogador, para:dono, pb:jogadorDele, t:Date.now()};
+  const pacote={k:'of', g:geracao(), id, de:ME.cap, pas:meus, para:dono, pbs:deles, t:Date.now()};
   anotaTroca(pacote,0);
   mandaExtra(pacote);
-  trocaAberta=false; trocaMeu=null; trocaDele=null;
-  flash(`⇄ Proposta enviada pro ${S.caps[dono].n}: ${meuJogador} pelo ${jogadorDele}.`,5000);
+  trocaAberta=false; trocaMeus=[]; trocaDeles=[];
+  flash(`⇄ Proposta enviada pro ${S.caps[dono].n}: ${listaNomes(meus)} por ${listaNomes(deles)}.`,5000);
   renderDraft();
 }
 function respondeTroca(id,ok){
@@ -4806,20 +4874,25 @@ function respondeTroca(id,ok){
   anotaTroca(pacote,0);
   mandaExtra(pacote);
   if(ok) aplicaTroca(id,o);
+  /* respondeu na janela de trocas: o relogio do mercado recomeca, senao quem
+     acabou de responder nao teria tempo de fazer a propria oferta */
+  else if(mercadoAberto()) commit(st=>{ st.clock=Date.now(); });
   renderDraft();
 }
 /* Só quem aceita grava. Se a gravacao se perder numa colisao com uma pick,
    tenta de novo — a troca nao pode sumir em silencio. */
 function aplicaTroca(id,o){
-  const sa=slotDoJogador(o.pa), sb=slotDoJogador(o.pb);
-  if(sa===null||sb===null) return;
-  const reg={id, a:o.de, pa:o.pa, sa, b:o.para, pb:o.pb, sb, t:Date.now()};
-  commit(st=>{ st.trocas=(st.trocas||[]).concat([reg]); });
+  const sas=o.pas.map(slotDoJogador), sbs=o.pbs.map(slotDoJogador);
+  if(sas.some(s=>s===null)||sbs.some(s=>s===null)) return;
+  /* O registro guarda só os slots: é o que `timeAtual` precisa, e estado curto
+     é estado que não estoura o limite do transporte. */
+  const reg={id, a:o.de, sas, b:o.para, sbs, t:Date.now()};
+  /* na janela de trocas, aceitar tambem reinicia o relogio do mercado */
+  const naJanela=mercadoAberto();
+  commit(st=>{ st.trocas=(st.trocas||[]).concat([reg]); if(naJanela) st.clock=Date.now(); });
   /* quem trocou de time volta pro banco dos dois lados */
-  [[o.de,o.pa],[o.para,o.pb]].forEach(([c,nome])=>{
-    const e=escalacao.get(c);
-    if(e&&e.m&&e.m[nome]!==undefined){ const novo={f:e.f,m:{...e.m},q:Date.now()}; delete novo.m[nome]; escalacao.set(c,novo); }
-  });
+  o.pas.forEach(n=>tiraDoCampo(o.de,n));
+  o.pbs.forEach(n=>tiraDoCampo(o.para,n));
   if(podeEscalar(o.para)) publicaEscala(o.para);
   let tentativas=0;
   const conferir=()=>{
@@ -4831,31 +4904,56 @@ function aplicaTroca(id,o){
   };
   setTimeout(conferir,2500);
 }
-let trocaAberta=false, trocaMeu=null, trocaDele=null;
-function abreTroca(){ trocaAberta=true; trocaMeu=null; trocaDele=null; renderDraft();
+function tiraDoCampo(c,nome){
+  const e=escalacao.get(c);
+  if(e&&e.m&&e.m[nome]!==undefined){
+    const novo={f:e.f,m:{...e.m},q:Date.now()}; delete novo.m[nome]; escalacao.set(c,novo);
+  }
+}
+let trocaAberta=false, trocaMeus=[], trocaDeles=[];
+const limpaSel=()=>{ trocaMeus=[]; trocaDeles=[]; };
+function abreTroca(){ trocaAberta=true; limpaSel(); renderDraft();
   try{ document.getElementById('trocaPainel').scrollIntoView({block:'center'}); }catch(e){} }
-function fechaTroca(){ trocaAberta=false; trocaMeu=null; trocaDele=null; renderDraft(); }
-function escolheMeu(n){ trocaMeu = trocaMeu===n?null:n; renderDraft(); }
-function escolheDele(n){ trocaDele = trocaDele===n?null:n; renderDraft(); }
-function enviaTroca(){ if(trocaMeu&&trocaDele) proporTroca(trocaMeu,trocaDele); }
+function fechaTroca(){ trocaAberta=false; limpaSel(); renderDraft(); }
+const alterna=(lista,n)=>{ const i=lista.indexOf(n); if(i>=0) lista.splice(i,1); else lista.push(n); };
+function escolheMeu(n){
+  if(trocaMeus.indexOf(n)<0 && trocaMeus.length>=MAX_PACOTE){
+    flash(`No pacote cabem no máximo ${MAX_PACOTE} de cada lado.`); return;
+  }
+  alterna(trocaMeus,n); renderDraft();
+}
+function escolheDele(n){
+  const dono=timeDoJogador(n);
+  /* pacote é com um time só: tocar em outro time recomeça a lista de lá */
+  if(trocaDeles.length && timeDoJogador(trocaDeles[0])!==dono) trocaDeles=[];
+  if(trocaDeles.indexOf(n)<0 && trocaDeles.length>=MAX_PACOTE){
+    flash(`No pacote cabem no máximo ${MAX_PACOTE} de cada lado.`); return;
+  }
+  alterna(trocaDeles,n); renderDraft();
+}
+function enviaTroca(){
+  if(trocaMeus.length && trocaMeus.length===trocaDeles.length) proporTroca(trocaMeus.slice(),trocaDeles.slice());
+}
 
 function renderTrocas(){
   const bt=document.getElementById('btnTroca');
-  const podeTrocar = ME.cap>=0 && S.phase==='draft' && !editMode && S.picks.length>=2;
-  if(bt) bt.classList.toggle('hidden',!podeTrocar);
+  const podeTrocar = ME.cap>=0 && podeNegociar() && !editMode && S.picks.length>=2;
+  /* na janela de trocas o botão já está dentro do cartão dela: dois na mesma tela confunde */
+  if(bt) bt.classList.toggle('hidden',!podeTrocar||mercadoAberto());
   const pn=document.getElementById('trocaPainel');
   if(!pn) return;
   pn.classList.toggle('hidden',!(trocaAberta&&podeTrocar));
 
   /* propostas chegando pra mim, e as minhas esperando resposta */
   const cx=document.getElementById('caixaOfertas'); cx.innerHTML='';
-  if(ME.cap>=0 && S.phase==='draft'){
+  if(ME.cap>=0 && podeNegociar()){
     ofertasPraMim().forEach(id=>{
       const o=ofertas.get(id);
       const d=document.createElement('div'); d.className='oferta';
       d.innerHTML='<h3>⇄ Proposta de troca</h3><p></p><div class="row"></div>';
-      d.querySelector('p').textContent =
-        `${(S.caps[o.de]||{}).n} te oferece ${o.pa} e quer o ${o.pb} do seu time.`;
+      d.querySelector('p').textContent = o.pas.length>1
+        ? `${(S.caps[o.de]||{}).n} te oferece ${listaNomes(o.pas)} e quer ${listaNomes(o.pbs)} do seu time.`
+        : `${(S.caps[o.de]||{}).n} te oferece ${o.pas[0]} e quer o ${o.pbs[0]} do seu time.`;
       const r=d.querySelector('.row');
       const sim=document.createElement('button'); sim.className='ok'; sim.textContent='✅ Aceitar';
       sim.onclick=()=>respondeTroca(id,1);
@@ -4866,11 +4964,17 @@ function renderTrocas(){
     minhasOfertas().forEach(id=>{
       const o=ofertas.get(id);
       const d=document.createElement('div'); d.className='minhaOferta';
-      d.textContent=`⏳ Esperando ${(S.caps[o.para]||{}).n} responder: ${o.pa} pelo ${o.pb}.`;
+      d.textContent=`⏳ Esperando ${(S.caps[o.para]||{}).n} responder: ${listaNomes(o.pas)} por ${listaNomes(o.pbs)}.`;
       cx.appendChild(d);
     });
   }
   if(!trocaAberta||!podeTrocar) return;
+
+  /* nome que ja nao e mais do time (troca aceita no meio da montagem) sai da selecao */
+  trocaMeus=trocaMeus.filter(n=>timeDoJogador(n)===ME.cap);
+  const alvo = trocaDeles.length ? timeDoJogador(trocaDeles[0]) : -1;
+  if(alvo<0||alvo===ME.cap) trocaDeles=[];
+  else trocaDeles=trocaDeles.filter(n=>timeDoJogador(n)===alvo);
 
   const meus=roster(ME.cap).map(p=>p.p);
   const outros=S.caps.map((c,i)=>i).filter(i=>i!==ME.cap)
@@ -4880,7 +4984,7 @@ function renderTrocas(){
   cm.appendChild(rot);
   if(!meus.length){ const v=document.createElement('span'); v.className='rot'; v.textContent='você ainda não tem jogador pra oferecer'; cm.appendChild(v); }
   meus.forEach(n=>{
-    const b=document.createElement('button'); b.className='tl'+(trocaMeu===n?' sel':'');
+    const b=document.createElement('button'); b.className='tl'+(trocaMeus.indexOf(n)>=0?' sel':'');
     b.textContent=n; b.onclick=()=>escolheMeu(n); cm.appendChild(b);
   });
   const co=document.getElementById('trocaOutros'); co.innerHTML='';
@@ -4889,18 +4993,32 @@ function renderTrocas(){
     r2.textContent=`${(S.caps[i]||{}).n} — ${teamLabel(i)}`;
     co.appendChild(r2);
     nomes.forEach(n=>{
-      const b=document.createElement('button'); b.className='tl'+(trocaDele===n?' sel':'');
+      const sel=trocaDeles.indexOf(n)>=0;
+      /* pacote e com um time só: os outros ficam apagados enquanto ha selecao */
+      const apagado = alvo>=0 && i!==alvo;
+      const b=document.createElement('button'); b.className='tl'+(sel?' sel':'')+(apagado?' off':'');
       const dt=document.createElement('span'); dt.className='dt'; dt.style.background=hexTime(S.caps[i]);
       b.appendChild(dt); b.append(document.createTextNode(n));
       b.onclick=()=>escolheDele(n); co.appendChild(b);
     });
   });
   const en=document.getElementById('trocaEnviar');
-  en.disabled=!(trocaMeu&&trocaDele);
-  document.getElementById('trocaPasso').textContent = trocaMeu&&trocaDele
-    ? `Você dá ${trocaMeu} e recebe ${trocaDele}. Confirme pra mandar a proposta.`
-    : (trocaMeu ? 'Agora toque no jogador que você quer receber.'
-                : 'Toque num jogador SEU e depois num jogador de outro time.');
+  const igual = trocaMeus.length>0 && trocaMeus.length===trocaDeles.length;
+  en.disabled=!igual;
+  en.textContent = trocaMeus.length>1||trocaDeles.length>1 ? '📨 Enviar pacote' : '📨 Enviar proposta';
+  const passo=document.getElementById('trocaPasso');
+  if(igual){
+    passo.textContent=`Você dá ${listaNomes(trocaMeus)} e recebe ${listaNomes(trocaDeles)}. Confirme pra mandar a proposta.`;
+  }else if(trocaMeus.length&&trocaDeles.length){
+    const falta=trocaMeus.length-trocaDeles.length;
+    passo.textContent = falta>0
+      ? `Falta escolher ${falta} jogador${falta>1?'es':''} do outro time — o pacote tem que ter a mesma quantidade dos dois lados.`
+      : `Você escolheu ${trocaDeles.length} de lá e só ofereceu ${trocaMeus.length} — ponha mais ${-falta} do seu time.`;
+  }else if(trocaMeus.length){
+    passo.textContent='Agora toque nos jogadores que você quer receber — dá pra pedir mais de um, sempre na mesma quantidade.';
+  }else{
+    passo.textContent='Toque nos jogadores SEUS e depois nos do outro time. Dá pra montar pacote (2 por 2, 3 por 3), sempre igual dos dois lados.';
+  }
 }
 
 /* linha do tempo das trocas, pra misturar no chat */
@@ -4908,13 +5026,106 @@ function eventosTroca(){
   const ev=[];
   for(const [id,o] of ofertas){
     const nomeA=(S.caps[o.de]||{}).n||'?', nomeB=(S.caps[o.para]||{}).n||'?';
-    ev.push({t:o.t, id, tipo:'of', m:`${nomeA} ofereceu ${o.pa} pro ${nomeB} em troca de ${o.pb}`});
+    const A=listaNomes(o.pas), B=listaNomes(o.pbs);
+    const pct=o.pas.length>1?`pacote de ${o.pas.length} por ${o.pbs.length}: `:'';
+    ev.push({t:o.t, id, tipo:'of', m:`${nomeA} ofereceu ${pct}${A} pro ${nomeB} em troca de ${B}`});
     const r=respostas.get(id);
     if(r) ev.push({t:r.t, id, tipo:r.ok?'sim':'nao',
-      m:r.ok ? `${nomeB} ACEITOU: ${o.pa} vai pro ${nomeB} e ${o.pb} vai pro ${nomeA}`
-             : `${nomeB} recusou a troca de ${o.pa} por ${o.pb}`});
+      m:r.ok ? `${nomeB} ACEITOU: ${A} vai pro ${nomeB} e ${B} vai pro ${nomeA}`
+             : `${nomeB} recusou a troca de ${A} por ${B}`});
   }
   return ev.sort((a,b)=>a.t-b.t);
+}
+/* ===== a janela de trocas: o mercado, entre o último pick e o resumo =====
+   O relógio é o mesmo `clock` do turno, que a última pick já carimbou — então
+   a janela abre sozinha, sem mensagem nova, e a âncora monotônica vale igual.
+   Enquanto tem proposta na mesa o relógio congela: quem foi chamado pra
+   negociar não pode ser empurrado pro resumo com a proposta pendurada. */
+const MERCADO_SEC = 30;
+const OFERTA_SEGURA = 45*1000;      // proposta mais nova que isso segura o relógio
+function draftAcabou(){ return S.phase==='draft' && onClock()===null && (S.order||[]).length>0; }
+function mercadoAberto(){ return draftAcabou() && !S.mfim; }
+/* durante o draft ou na janela. Depois que o resumo abre, troca fecha de vez. */
+function podeNegociar(){ return S.phase==='draft' && (onClock()!==null || mercadoAberto()); }
+const capitaes = () => (S.caps||[]).map((c,i)=>i).filter(i=>((S.caps[i]||{}).n));
+/* o ok vale pro time como ele está: mexeu no draft (desfez, removeu pick),
+   os ok antigos deixam de contar sozinhos */
+function prontoNoMercado(i){
+  const p=prontos.get(i);
+  return !!(p && p.v && p.n===(S.picks||[]).length);
+}
+/* proposta velha que ninguém respondeu não segura a sala pra sempre */
+function negociando(){ return idsVivos().some(id=>Date.now()-ofertas.get(id).t<OFERTA_SEGURA); }
+function mercRestante(){ return Math.max(0, MERCADO_SEC-decorrido()); }
+function fechaMeuTime(){
+  if(ME.cap<0||!mercadoAberto()) return;
+  const ja=prontoNoMercado(ME.cap);
+  const pacote={k:'ok', g:geracao(), c:ME.cap, v:ja?0:1, n:(S.picks||[]).length, t:Date.now()};
+  anotaTroca(pacote,0);
+  mandaExtra(pacote);
+  flash(ja?'↩ Você voltou pra negociação.':'✅ Time fechado. Esperando os outros capitães.');
+  renderDraft();
+}
+function forcaResumo(){
+  if(ME.role!=='host'||!mercadoAberto()) return;
+  if(negociando()&&!confirm('Tem proposta de troca na mesa. Fechar a janela agora mesmo?')) return;
+  commit(st=>{ st.mfim=1; });
+}
+/* Fecha quando os capitães deram ok ou o tempo estourou — e sempre com a mesa
+   limpa. Em camadas, como o resto do app: navegador congela temporizador de
+   aba em segundo plano, então não pode depender de um aparelho só. */
+let mFechaVisto=0, avisouMercado=false;
+function tentaFecharMercado(){
+  if(!ME.room||!mercadoAberto()||pushPend||S.paused) return;
+  if(negociando()){ mFechaVisto=0; return; }
+  const caps=capitaes();
+  const todos = caps.length>0 && caps.every(i=>prontoNoMercado(i));
+  if(!todos && mercRestante()>0){ mFechaVisto=0; return; }
+  if(!mFechaVisto) mFechaVisto=agoraMono();
+  const esperei=(agoraMono()-mFechaVisto)/1000;
+  const limite = ME.role==='host' ? 0.4 : (ME.cap>=0 ? 2+ME.cap*0.8 : 8);
+  if(esperei>=limite) commit(st=>{ st.mfim=1; });
+}
+function renderMercado(){
+  const card=document.getElementById('mercadoCard');
+  if(!card) return;
+  const aberto=mercadoAberto();
+  card.classList.toggle('hidden',!aberto);
+  if(!aberto){ avisouMercado=false; return; }
+  if(!avisouMercado){
+    avisouMercado=true;
+    try{ flash(ME.cap>=0
+      ? '🔁 Janela de trocas aberta — última chance de negociar antes do resumo.'
+      : '🔁 Janela de trocas: os capitães têm alguns segundos pra fechar negócio.',6000); }catch(e){}
+  }
+  const neg=negociando(), r=mercRestante(), souCap=ME.cap>=0;
+  const rel=document.getElementById('mercRelogio');
+  rel.className = (neg||S.paused) ? 'negociando' : (r<=10?'warn':'');
+  rel.textContent = S.paused ? 'pausado'
+    : neg ? '⏸ proposta na mesa'
+    : (r===0 ? 'TEMPO!' : '0:'+String(r).padStart(2,'0'));
+  document.getElementById('mercTxt').textContent = neg
+    ? 'Tem proposta na mesa — o relógio só volta a correr quando ela for respondida.'
+    : souCap
+      ? (prontoNoMercado(ME.cap)
+         ? 'Você fechou. Quando todos fecharem — ou o tempo acabar — o resumo abre e as trocas encerram.'
+         : 'Última chance de negociar: proponha uma troca ou toque em “Time fechado”.')
+      : 'Os capitães têm alguns segundos pra fechar as últimas trocas. Depois o resumo abre.';
+  const ch=document.getElementById('mercChips'); ch.innerHTML='';
+  capitaes().forEach(i=>{
+    const c=S.caps[i], ok=prontoNoMercado(i);
+    const d=document.createElement('span'); d.className='mchip'+(ok?' ok':'');
+    const dt=document.createElement('span'); dt.className='dt'; dt.style.background=hexTime(c);
+    d.appendChild(dt); d.append(document.createTextNode(c.n+(ok?' ✅':' ⏳')));
+    ch.appendChild(d);
+  });
+  const bp=document.getElementById('mercPronto');
+  const fechei=souCap&&prontoNoMercado(ME.cap);
+  bp.className = fechei ? 'sm' : 'ok';
+  bp.textContent = fechei ? '↩ Ainda quero negociar' : '✅ Time fechado';
+  bp.classList.toggle('hidden',!souCap);
+  document.getElementById('mercPropor').classList.toggle('hidden',!(souCap&&S.picks.length>=2));
+  document.getElementById('mercForca').classList.toggle('hidden',ME.role!=='host');
 }
 async function pullExtras(){
   try{
@@ -4932,10 +5143,10 @@ async function pullExtras(){
    os campinhos do draft anterior voltavam como se fossem deste. */
 const geracao = () => (S.nSorteios||0);
 function limpaCanais(){
-  escalacao.clear(); ofertas.clear(); respostas.clear();
+  escalacao.clear(); ofertas.clear(); respostas.clear(); prontos.clear();
   try{ escBuf.clear(); }catch(e){}
-  escalaSel=null; nomeNoCampo=null;
-  trocaAberta=false; trocaMeu=null; trocaDele=null;
+  escalaSel=null; nomeNoCampo=null; mFechaVisto=0; avisouMercado=false;
+  trocaAberta=false; limpaSel();
   trocasVistas=new Set(); trocaPrimeira=true;
 }
 const minhaEscala = c => escalacao.get(c) || {f:0,m:{}};
@@ -4954,6 +5165,19 @@ function campoDe(c){
   }
   const banco=[...meu].filter(n=>!usados.has(n));
   return {vagas,banco};
+}
+/* Quem aceita a troca limpa o campinho dos dois lados no aparelho dele, mas o
+   aparelho do outro capitão só descobre a troca pelo estado. Sem podar aqui, o
+   nome ficaria guardado numa vaga invisível e voltaria pro campo sozinho se o
+   jogador fosse trocado de volta. */
+function podaEscalacoes(){
+  for(const [c,e] of escalacao){
+    const meu=new Set([ ((S.caps||[])[c]||{}).n, ...roster(c).map(p=>p.p) ].filter(Boolean));
+    const sobra=Object.keys(e.m||{}).filter(n=>!meu.has(n));
+    if(!sobra.length) continue;
+    const m={...e.m}; sobra.forEach(n=>delete m[n]);
+    escalacao.set(c,{f:e.f,m,q:e.q});
+  }
 }
 /* Publica o desenho inteiro de uma vez: assim a ultima mensagem do capitao
    vale sozinha e nao existe merge pra dar errado. */
@@ -5561,6 +5785,7 @@ function editRemove(){
     st.dead=(st.dead||[]).concat([alvo.s]);      // o slot antigo morre
     st.extra=(st.extra||[]).concat([alvo.t]);    // e volta um novo no fim da fila
     st.prov=null;
+    st.mfim=0;                                     // sobrou pick: a janela de trocas volta depois
     if(!st.paused) st.clock=Date.now();
   });
 }
@@ -5570,14 +5795,15 @@ function undo(){
   if(!S.picks.length) return;
   lastAdded=null;
   document.getElementById('exp').classList.add('hidden');
-  commit(st=>{ st.picks.pop(); st.prov=null; st.clock=Date.now(); });
+  /* desfazer depois do resumo reabre a janela de trocas: o draft voltou a rolar */
+  commit(st=>{ st.picks.pop(); st.prov=null; st.clock=Date.now(); st.mfim=0; });
 }
 function resetAll(){
   if(ME.role!=='host'){ alert('Só o organizador pode começar um draft novo.'); return; }
   if(!confirm('Começar um draft novo? Os picks atuais serão apagados.')) return;
   commit(st=>{ st.picks=[]; st.prov=null; st.phase='setup'; st.clock=0;
                st.extra=[]; st.dead=[]; st.paused=0; st.left=0;
-               st.trocas=[]; st.crev=[]; st.crfim=0; });
+               st.trocas=[]; st.crev=[]; st.crfim=0; st.mfim=0; });
   limpaCanais();
 }
 
@@ -5595,7 +5821,7 @@ function reassumir(i){
 }
 function renderVolta(){
   const card=document.getElementById('voltaCard');
-  const mostrar = S.phase==='draft' && ME.role==='cap' && ME.cap<0 && onClock()!==null;
+  const mostrar = S.phase==='draft' && ME.role==='cap' && ME.cap<0 && (onClock()!==null||mercadoAberto());
   card.classList.toggle('hidden',!mostrar);
   if(!mostrar) return;
   const row=document.getElementById('voltaRow'); row.innerHTML='';
@@ -5654,11 +5880,14 @@ function renderDraft(){
     : (slotAtual<S.order.length ? Math.floor(slotAtual/4)+1 : totalRod);
   document.getElementById('roundNo').textContent=rodAtual;
   document.getElementById('pickNo').textContent=Math.min(S.picks.length+1,S.order.length);
-  document.getElementById('pausedBox').classList.toggle('hidden',!S.paused||done);
+  /* acabaram as picks, mas o resumo só abre quando a janela de trocas fechar */
+  const naJanela=mercadoAberto(), fechado=done&&!naJanela;
+  document.getElementById('pausedBox').classList.toggle('hidden',!S.paused||fechado);
   document.getElementById('turnbar').classList.toggle('hidden',done);
 
   renderRede();
-  document.getElementById('doneBanner').classList.toggle('hidden',!done);
+  renderMercado();
+  document.getElementById('doneBanner').classList.toggle('hidden',!fechado);
 
   const bar=document.getElementById('turnbar');
   const mine=!done&&ME.cap===t;
@@ -5768,7 +5997,8 @@ function renderDraft(){
      repete o resumo final. Some com as duas — o organizador recupera a lista
      ao entrar no modo correcao. */
   document.getElementById('colPool').classList.toggle('hidden', done && !editMode);
-  document.getElementById('teams').classList.toggle('hidden', done && !verCampo);
+  /* na janela de trocas os times continuam na tela: e neles que se negocia */
+  document.getElementById('teams').classList.toggle('hidden', fechado && !verCampo);
 
   const abrirLista = poolAberto===null ? souAtor : poolAberto;
   document.getElementById('poolHead').classList.toggle('fechado',!abrirLista);
@@ -5820,7 +6050,7 @@ function renderDraft(){
     const todosAbertos = n>0 && caps.every((c,i)=>!!timesAbertos[i]);
     bt.textContent = todosAbertos ? '🙈 Fechar todos' : '👁 Abrir todos';
     const bb=document.getElementById('barraTimes');
-    if(bb) bb.classList.toggle('hidden', done && !editMode && !verCampo);
+    if(bb) bb.classList.toggle('hidden', fechado && !editMode && !verCampo);
     const dica=document.getElementById('dicaTimes');
     if(dica) dica.textContent = todosAbertos ? 'toque num time pra fechar só ele' : 'toque num time pra ver os nomes';
   }
@@ -5904,7 +6134,7 @@ function renderDraft(){
 
 function renderResumo(){
   const card=document.getElementById('resumoCard');
-  const done = S.phase==='draft' && onClock()===null && S.order.length>0;
+  const done = draftAcabou() && !mercadoAberto();
   card.classList.toggle('hidden',!done);
   if(!done) return;
   const caps=S.caps||[];
@@ -5960,7 +6190,7 @@ function renderResumo(){
 function renderRede(){
   const box=document.getElementById('redeBox');
   if(!box) return;
-  const acabou = S.phase==='draft' && onClock()===null;
+  const acabou = S.phase==='draft' && onClock()===null && !mercadoAberto();
   const mostrar = !!ME.room && S.phase==='draft' && pushPend && !acabou;
   box.classList.toggle('hidden',!mostrar);
   if(mostrar){
@@ -6027,6 +6257,8 @@ setInterval(()=>{
   }
   if(S.phase!=='draft') return;
   tickClock();
+  try{ renderMercado(); }catch(e){}
+  try{ tentaFecharMercado(); }catch(e){}
   try{ renderRede(); }catch(e){}
   /* presenca muda sem mudar o estado do draft, entao os contadores se atualizam aqui */
   try{ if(connState==='on') setConn('on'); }catch(e){}
