@@ -407,11 +407,17 @@
   .vaga:not(.cheia) .bolha{font-size:.42rem;background:rgba(255,255,255,.22)}
   .vaga.cheia .bolha{box-shadow:0 2px 5px rgba(0,0,0,.4)}
   .balao{
-    position:absolute;transform:translate(-50%,-100%);z-index:6;
+    position:absolute;transform:translate(-50%,-100%);z-index:6;max-width:72%;
     background:var(--ink);color:var(--cream);border-radius:7px;padding:4px 8px;
     font-family:'Nunito',sans-serif;font-weight:800;font-size:.66rem;white-space:nowrap;
     box-shadow:0 3px 8px rgba(0,0,0,.35);pointer-events:none
   }
+  /* bolinha colada na borda de cima: o balão desce em vez de subir (subindo,
+     o gramado corta e a própria bolinha cobre o nome) */
+  .balao.desce{transform:translate(-50%,0)}
+  .balao.esq{transform:translate(0,-100%)} .balao.esq.desce{transform:translate(0,0)}
+  .balao.dir{transform:translate(-100%,-100%)} .balao.dir.desce{transform:translate(-100%,0)}
+  .balao{white-space:normal;text-align:center;line-height:1.2}
   .balao small{display:block;font-family:'Anton',sans-serif;font-size:.54rem;
     letter-spacing:.08em;color:var(--gold-2);font-weight:400}
   @media(min-width:520px){ .vaga .bolha{width:32px;height:32px;font-size:.68rem} }
@@ -429,6 +435,31 @@
   .banco .bt.cap{background:var(--ink);color:var(--cream)}
   .banco .vazio{font-size:.64rem;font-weight:700;color:var(--ink-soft);padding:4px 6px}
   .dicaCampo{font-size:.64rem;font-weight:700;color:var(--ink-soft);margin-top:7px}
+
+  /* "Seu time em campo": o campinho do capitão fica fora dos cards, logo
+     abaixo da barra da vez. Aberto enquanto os outros escolhem (é quando dá
+     tempo de pensar na escalação); na sua vez vira uma faixa fina, pra lista
+     de disponíveis continuar inteira na tela. */
+  .meuCampo{background:var(--cream-2);border:3px solid var(--ink);border-radius:10px;
+    box-shadow:var(--sh-sm);padding:9px 11px;margin-bottom:14px}
+  .meuCampo .mcHead{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;
+    box-shadow:none;padding:0;color:var(--ink);text-align:left;cursor:pointer}
+  .meuCampo .mcHead:active{transform:none}
+  .meuCampo .mcHead .dot{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--ink);flex:none}
+  .meuCampo .mcHead .t{font-family:'Anton',sans-serif;text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;flex:1;min-width:0}
+  .meuCampo .mcHead .t small{display:block;font-family:'Nunito',sans-serif;text-transform:none;letter-spacing:0;
+    font-weight:700;font-size:.7rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meuCampo .mcHead .b{font-family:'Anton',sans-serif;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;
+    border:2px solid var(--ink);border-radius:999px;padding:4px 9px;background:var(--cream);flex:none}
+  .meuCampo .campo{padding:8px 0 0}
+  .meuCampo.novo{box-shadow:0 0 0 3px var(--gold),var(--sh-sm)}
+  /* aqui o campinho tem a largura da tela: bolinhas maiores, dá pra acertar o dedo */
+  .meuCampo .vaga .bolha{width:36px;height:36px;font-size:.78rem}
+  .meuCampo .vaga:not(.cheia) .bolha{font-size:.5rem}
+  .meuCampo .gramado{max-width:520px;margin:0 auto}
+  .meuCampo .banco .bt{font-size:.74rem;padding:6px 9px}
+  .meuCampo .dicaCampo{font-size:.72rem}
+  @media(min-width:941px){ .meuCampo .campo{max-width:560px} }
 
   .team{border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--cream-2);box-shadow:var(--sh-sm)}
   .team.on{box-shadow:0 0 0 3px var(--gold),var(--sh)}
@@ -921,6 +952,8 @@
 
     <div id="caixaOfertas"></div>
 
+    <div id="meuCampo" class="meuCampo hidden"></div>
+
     <div class="board" id="board">
       <div class="card" id="colPool" style="margin:0">
         <div id="editBar" class="editbar hidden">
@@ -954,7 +987,7 @@
           <button class="sm" onclick="todosOsTimes()" id="btnTodosTimes">👁 Abrir todos</button>
         </div>
         <div class="row" id="barraCampo" style="margin-bottom:10px">
-          <button class="sm" onclick="modoCampo()" id="btnCampo">⚽ Ver campinho</button>
+          <button class="sm" onclick="modoCampo()" id="btnCampo">⚽ Campinho de todos</button>
           <button class="sm hidden" onclick="abreTroca()" id="btnTroca">⇄ Propor troca</button>
         </div>
         <div class="card hidden" id="trocaPainel" style="margin-bottom:10px">
@@ -1025,7 +1058,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v16</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v18</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -4799,6 +4832,7 @@ const MAX_PACOTE = 3;                // ate 3 de cada lado: mais que isso ningue
 let ofertas=new Map();               // id -> {de,pas:[],para,pbs:[],t}
 let respostas=new Map();             // id -> {ok,t}
 let prontos=new Map();               // capitao -> {v,n,t} na janela de trocas
+let montando=new Map();              // capitao -> {v,t} com o painel de troca aberto
 const listaNomes = ns => ns.join(' + ');
 /* aceita o formato antigo (um jogador de cada lado) e o novo (pacote) */
 function nomesDe(v){
@@ -4830,6 +4864,17 @@ function anotaTroca(d,tsrv){
     const ant=prontos.get(d.c);
     if(ant && ant.t>t) return;                           // chegou fora de ordem
     prontos.set(d.c,{v:d.v?1:0, n:Number(d.n)||0, t});
+    return;
+  }
+  /* "estou montando uma proposta": o relógio da janela não pode correr enquanto
+     alguém está escolhendo os nomes. Só a proposta JÁ ENVIADA congelava o tempo,
+     então quem abrisse o painel no último segundo perdia a janela montando. */
+  if(d.k==='mont'){
+    if(typeof d.c!=='number'||d.c<0||d.c>3) return;
+    const t=Number(d.t)||Number(tsrv)*1000||Date.now();
+    const ant=montando.get(d.c);
+    if(ant && ant.t>t) return;
+    montando.set(d.c,{v:d.v?1:0, t});
     return;
   }
 }
@@ -5043,6 +5088,8 @@ function eventosTroca(){
    negociar não pode ser empurrado pro resumo com a proposta pendurada. */
 const MERCADO_SEC = 30;
 const OFERTA_SEGURA = 45*1000;      // proposta mais nova que isso segura o relógio
+const MONTA_VALE = 50*1000;         // painel aberto segura o relógio, mas não pra sempre
+const MONTA_AVISA = 20000;          // e reavisa de tempos em tempos enquanto está aberto
 function draftAcabou(){ return S.phase==='draft' && onClock()===null && (S.order||[]).length>0; }
 function mercadoAberto(){ return draftAcabou() && !S.mfim; }
 /* durante o draft ou na janela. Depois que o resumo abre, troca fecha de vez. */
@@ -5055,7 +5102,32 @@ function prontoNoMercado(i){
   return !!(p && p.v && p.n===(S.picks||[]).length);
 }
 /* proposta velha que ninguém respondeu não segura a sala pra sempre */
-function negociando(){ return idsVivos().some(id=>Date.now()-ofertas.get(id).t<OFERTA_SEGURA); }
+const quemMonta = () => capitaes().filter(i=>{
+  const m=montando.get(i);
+  return m && m.v && Date.now()-m.t<MONTA_VALE;
+});
+/* o relógio para com proposta na mesa OU com alguém montando uma */
+function negociando(){
+  return idsVivos().some(id=>Date.now()-ofertas.get(id).t<OFERTA_SEGURA) || quemMonta().length>0;
+}
+/* Avisa a sala que estou com o painel aberto, e reavisa enquanto estiver.
+   Ao fechar sem mandar nada, devolve o tempo pra janela não morrer na mão. */
+let montPub=0;
+function publicaMont(v){
+  if(ME.cap<0) return;
+  const pacote={k:'mont', g:geracao(), c:ME.cap, v:v?1:0, t:Date.now()};
+  anotaTroca(pacote,0); mandaExtra(pacote);
+}
+function cuidaDoMontando(){
+  if(ME.cap<0) return;
+  const aberto = trocaAberta && mercadoAberto();
+  if(aberto){
+    if(Date.now()-montPub>MONTA_AVISA){ montPub=Date.now(); publicaMont(1); }
+  }else if(montPub){
+    montPub=0; publicaMont(0);
+    if(mercadoAberto()) commit(st=>{ st.clock=Date.now(); });   // fechou o painel: tempo novo
+  }
+}
 function mercRestante(){ return Math.max(0, MERCADO_SEC-decorrido()); }
 function fechaMeuTime(){
   if(ME.cap<0||!mercadoAberto()) return;
@@ -5099,13 +5171,19 @@ function renderMercado(){
       : '🔁 Janela de trocas: os capitães têm alguns segundos pra fechar negócio.',6000); }catch(e){}
   }
   const neg=negociando(), r=mercRestante(), souCap=ME.cap>=0;
+  const montadores=quemMonta(), naMesa=idsVivos().length>0;
   const rel=document.getElementById('mercRelogio');
   rel.className = (neg||S.paused) ? 'negociando' : (r<=10?'warn':'');
   rel.textContent = S.paused ? 'pausado'
-    : neg ? '⏸ proposta na mesa'
+    : naMesa ? '⏸ proposta na mesa'
+    : montadores.length ? '⏸ montando proposta'
     : (r===0 ? 'TEMPO!' : '0:'+String(r).padStart(2,'0'));
-  document.getElementById('mercTxt').textContent = neg
+  document.getElementById('mercTxt').textContent = naMesa
     ? 'Tem proposta na mesa — o relógio só volta a correr quando ela for respondida.'
+    : montadores.length
+      ? (montadores.indexOf(ME.cap)>=0
+         ? 'O relógio está parado enquanto você monta a proposta — pode escolher com calma.'
+         : `${montadores.map(i=>(S.caps[i]||{}).n).join(', ')} está montando uma proposta — o relógio parou.`)
     : souCap
       ? (prontoNoMercado(ME.cap)
          ? 'Você fechou. Quando todos fecharem — ou o tempo acabar — o resumo abre e as trocas encerram.'
@@ -5143,9 +5221,10 @@ async function pullExtras(){
    os campinhos do draft anterior voltavam como se fossem deste. */
 const geracao = () => (S.nSorteios||0);
 function limpaCanais(){
-  escalacao.clear(); ofertas.clear(); respostas.clear(); prontos.clear();
+  escalacao.clear(); ofertas.clear(); respostas.clear(); prontos.clear(); montando.clear(); montPub=0;
   try{ escBuf.clear(); }catch(e){}
   escalaSel=null; nomeNoCampo=null; mFechaVisto=0; avisouMercado=false;
+  meusVistos=null; mcNovo=null; mcAberto=null;
   trocaAberta=false; limpaSel();
   trocasVistas=new Set(); trocaPrimeira=true;
 }
@@ -5203,11 +5282,12 @@ function mexeEscala(c,fn){
 }
 function trocaFormacao(c,f){ mexeEscala(c,e=>{ e.f=f; }); }
 let escalaSel=null;                  // {c, nome} selecionado pra mover
-let nomeNoCampo=null, nomeTimer=null; // balao com o nome de quem foi tocado
+let nomeNoCampo=null; // balao com o nome de quem foi tocado
+/* Toque mostra o nome; tocar de novo na mesma bolinha esconde. Antes ele
+   sumia sozinho em 3 s, e quem demorava pra achar o balão não lia nada. */
 function mostraNomeNoCampo(c,k,nome,pos){
-  nomeNoCampo={c,k,nome,pos};
-  clearTimeout(nomeTimer);
-  nomeTimer=setTimeout(()=>{ nomeNoCampo=null; try{ renderDraft(); }catch(e){} },2800);
+  const mesmo = nomeNoCampo && nomeNoCampo.c===c && nomeNoCampo.k===k && nomeNoCampo.nome===nome;
+  nomeNoCampo = mesmo ? null : {c,k,nome,pos};
   try{ renderDraft(); }catch(e){}
 }
 function tocaJogador(c,nome){
@@ -5239,6 +5319,66 @@ function mandaProBanco(c){
   if(!sel||sel.c!==c) return;
   escalaSel=null;
   mexeEscala(c,e=>{ delete e.m[sel.nome]; });
+}
+
+/* ============ SEU TIME EM CAMPO ============
+   Ninguém usava o campinho: ele trocava de lugar com a lista de nomes dentro
+   do card e só aparecia se alguém achasse o botão "Ver campinho". O capitão
+   passa a ver o PRÓPRIO campinho sempre, num cartão fora dos times:
+   - enquanto os outros escolhem, aberto — é o tempo morto do draft;
+   - na vez dele, fechado numa faixa de uma linha, pra lista de disponíveis
+     não ser empurrada pra baixo (dá pra abrir se quiser);
+   - quem acabou de entrar no time já vem selecionado, então um toque numa
+     posição basta pra pôr ele em campo. */
+let mcAberto=null;        // null = automático; true/false = o capitão mandou nesta vez
+let mcVez=-1;             // em que pick foi a última escolha manual
+let meusVistos=null;      // nomes do meu time na última tela, pra achar quem chegou
+let mcNovo=null;          // quem acabou de chegar (destaque até ser posicionado)
+function mcMinimizado(){ try{ return localStorage.getItem('sl_mc_min')==='1'; }catch(e){ return false; } }
+function toggleMeuCampo(aberto){
+  const t=onClock(), minhaVez = t!==null && t===ME.cap;
+  mcAberto=!aberto; mcVez=S.picks.length;
+  /* fechar fora da vez = "não quero ver": fica lembrado pros próximos drafts */
+  if(!minhaVez){ try{ localStorage.setItem('sl_mc_min', aberto?'1':'0'); }catch(e){} }
+  renderDraft();
+}
+function vigiaChegadas(){
+  const c=ME.cap;
+  if(!(c>=0) || !(S.caps||[])[c]){ meusVistos=null; return; }
+  const agora=new Set(roster(c).map(p=>p.p));
+  if(meusVistos){
+    const novos=[...agora].filter(n=>!meusVistos.has(n));
+    if(novos.length===1 && !(escalaSel&&escalaSel.c===c)){
+      const ja=minhaEscala(c).m||{};
+      if(ja[novos[0]]===undefined){ escalaSel={c,nome:novos[0]}; mcNovo=novos[0]; }
+    }
+  }
+  meusVistos=agora;
+  if(mcNovo && !(escalaSel&&escalaSel.nome===mcNovo)) mcNovo=null;
+}
+function renderMeuCampo(){
+  const box=document.getElementById('meuCampo'); if(!box) return;
+  const c=ME.cap, caps=S.caps||[];
+  const t=onClock(), done=t===null, fechado=done&&!mercadoAberto();
+  box.innerHTML='';
+  if(!(c>=0) || !caps[c] || editMode || fechado || S.phase!=='draft'){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  if(mcVez!==S.picks.length) mcAberto=null;          // a vez mudou: volta pro automático
+  const minhaVez = !done && t===c;
+  const aberto = mcAberto!==null ? mcAberto : (!minhaVez && !mcMinimizado());
+  const {vagas,banco}=campoDe(c);
+  const emCampo=vagas.filter(Boolean).length;
+  box.classList.toggle('novo', !!mcNovo && aberto);
+  const h=document.createElement('button'); h.className='mcHead';
+  const sub = mcNovo && aberto
+    ? `${primeiroNome(mcNovo)} chegou — toque na posição dele`
+    : `${emCampo} em campo · ${banco.length} no banco · ${formacaoDe(c).n}`;
+  h.innerHTML=`<span class="dot" style="background:${esc(hexTime(caps[c]))}"></span>`+
+    `<span class="t">⚽ Seu time em campo<small></small></span><span class="b">${aberto?'Fechar':'Abrir'}</span>`;
+  h.querySelector('small').textContent = sub;
+  h.onclick=()=>toggleMeuCampo(aberto);
+  box.appendChild(h);
+  if(aberto) montaCampo(c,box);
 }
 
 /* ================= DRAFT ================= */
@@ -5320,8 +5460,13 @@ function montaCampo(i,dest){
   if(nomeNoCampo && nomeNoCampo.c===i){
     const v=form.v[nomeNoCampo.k];
     if(v){
-      const bal=document.createElement('div'); bal.className='balao';
-      bal.style.left=v.x+'%'; bal.style.top=(v.y-6)+'%';
+      /* perto da borda de cima o balão vai pra baixo da bolinha; perto das
+         laterais ele encosta pro lado de dentro, pra não ser cortado */
+      const desce = v.y<35;
+      const lado = v.x<22 ? ' esq' : (v.x>78 ? ' dir' : '');
+      const bal=document.createElement('div'); bal.className='balao'+(desce?' desce':'')+lado;
+      bal.style.left = (lado===' esq' ? Math.max(1,v.x-6) : lado===' dir' ? Math.min(99,v.x+6) : v.x)+'%';
+      bal.style.top = (desce ? v.y+9 : v.y-9)+'%';
       bal.innerHTML='<small></small>';
       bal.querySelector('small').textContent=nomeNoCampo.pos;
       bal.insertBefore(document.createTextNode(nomeNoCampo.nome),bal.firstChild);
@@ -5868,6 +6013,7 @@ function conferMinhaEscolha(){
 }
 
 function renderDraft(){
+  try{ vigiaChegadas(); }catch(e){}
   const t=onClock(), done=t===null, caps=S.caps||[];
   // quem esta escolhendo ve a lista primeiro; os outros veem os times primeiro
   const souAtor = canAct() || editMode;
@@ -6056,7 +6202,7 @@ function renderDraft(){
   }
   const bc=document.getElementById('btnCampo');
   if(bc){
-    bc.textContent = verCampo ? '📋 Ver lista' : '⚽ Ver campinho';
+    bc.textContent = verCampo ? '📋 Ver lista' : '⚽ Campinho de todos';
     bc.className = 'sm'+(verCampo?' ok':'');
     const bcb=document.getElementById('barraCampo');
     if(bcb) bcb.classList.toggle('hidden', editMode);
@@ -6130,6 +6276,7 @@ function renderDraft(){
       'O cronômetro roda no seu aparelho. · '+msgsHoje()+' mensagens hoje (limite grátis ~250 por rede).';
   renderResumo();
   try{ renderVolta(); conferMinhaEscolha(); avisaMinhaVez(); renderTrocas(); }catch(e){}
+  try{ renderMeuCampo(); }catch(e){}
 }
 
 function renderResumo(){
@@ -6258,6 +6405,7 @@ setInterval(()=>{
   if(S.phase!=='draft') return;
   tickClock();
   try{ renderMercado(); }catch(e){}
+  try{ cuidaDoMontando(); }catch(e){}
   try{ tentaFecharMercado(); }catch(e){}
   try{ renderRede(); }catch(e){}
   /* presenca muda sem mudar o estado do draft, entao os contadores se atualizam aqui */
