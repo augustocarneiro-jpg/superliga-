@@ -1058,7 +1058,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v18</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">v19</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -3379,12 +3379,18 @@ const NAMED = [
 /* Quatro cores pra quatro times. Azul e amarelo sairam depois da pelada em que
    azul escuro virou preto e amarelo virou verde no meio do jogo: o que sobrou
    nao se confunde de longe, que e o que importa quando a bola esta rolando. */
+/* Out/2026: o verde saiu e o azul voltou como cor oficial: azul ESCURO,
+   o mesmo dos coletes novos da pelada. */
 const CORES = [
   ['Preto',   '#171717'],
   ['Branco',  '#F4F1E8'],
   ['Vermelho','#C6302C'],
-  ['Verde',   '#2E9C46']
+  ['Azul',    '#1F3C88']
 ];
+/* Sala que já estava rolando com o verde: o verde vira azul (mesma vaga da
+   lista). Sem isso, a aproximação pela cor mais parecida podia mandar o
+   verde pro preto e deixar dois times com a mesma camisa. */
+const CORES_ANTIGAS = { '#2E9C46':3 };
 const SEM_COR = '#B4AC98';
 /* Exato primeiro; se nao bater (sala criada na versao antiga, que deixava
    escolher qualquer cor), aproxima pela mais parecida. Vazio = ainda nao escolheu. */
@@ -3394,6 +3400,7 @@ function corIdx(hex){
   const h=normHex(hex).toUpperCase();
   const i=CORES.findIndex(c=>c[1].toUpperCase()===h);
   if(i>=0) return i;
+  if(CORES_ANTIGAS[h]!==undefined) return CORES_ANTIGAS[h];
   let melhor=-1,d=Infinity;
   CORES.forEach((c,j)=>{ const x=colorDist(h,c[1]); if(x<d){d=x;melhor=j;} });
   return melhor;
