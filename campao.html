@@ -774,7 +774,7 @@
         <textarea id="gksIn" rows="4" placeholder="goleiro 1&#10;goleiro 2"></textarea>
         <div class="row between" style="margin-top:10px">
           <span class="count" id="gksCount">0 goleiros</span>
-          <span class="count" id="poolCount">0 de 38 a 40 no draft</span>
+          <span class="count" id="poolCount">0 no total (38 a 40)</span>
         </div>
       </div>
     </div>
@@ -1072,7 +1072,7 @@
     </div>
   </div>
 
-  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">Campão v1</span></div>
+  <div class="ftr">Superliga · Futebol e Cerveja · <span id="versao">Campão v2</span></div>
 </div>
 
 <div id="chatToast"></div>
@@ -3475,11 +3475,12 @@ function teamLabel(i){
 /* ================= ESTADO ================= */
 const TURN_SEC = 60;
 /* ===== CAMPÃO =====
-   Dois times em vez de quatro. 36 de linha + 2 a 4 goleiros vão pro draft,
+   Dois times em vez de quatro. 38 a 40 pessoas no total, CONTANDO os 2
+   capitães, com 2 a 4 goleiros no meio dos que vão pro draft,
    todos misturados na mesma lista: escolher goleiro cedo ou tarde é parte do
    xadrez dos capitães (ninguém tem goleiro garantido). */
 const NT = 2;
-const POOL_MIN = 38, POOL_MAX = 40;   // quantos vão ser ESCOLHIDOS (fora os capitães)
+const TOTAL_MIN = 38, TOTAL_MAX = 40; // todo mundo do Campão, capitães incluídos
 const GK_MIN = 2, GK_MAX = 4;
 const LUVA = '🧤';
 const ehGoleiro = n => String(n||'').startsWith(LUVA);
@@ -4174,9 +4175,9 @@ function renderSetupCounts(){
   const gc=document.getElementById('gksCount');
   gc.textContent=gks.length+(gks.length===1?' goleiro':' goleiros');
   gc.className='count'+(gks.length>=GK_MIN&&gks.length<=GK_MAX?' good':' bad');
-  const tot=pls.length+gks.length, okTot=tot>=POOL_MIN&&tot<=POOL_MAX;
+  const tot=caps.length+pls.length+gks.length, okTot=tot>=TOTAL_MIN&&tot<=TOTAL_MAX;
   const tc=document.getElementById('poolCount');
-  tc.textContent=`${tot} no draft (${POOL_MIN} a ${POOL_MAX})`;
+  tc.textContent=`${tot} no total com os capitães (${TOTAL_MIN} a ${TOTAL_MAX})`;
   tc.className='count'+(okTot?' good':' bad');
 }
 async function regenPw(){
@@ -4306,12 +4307,11 @@ function renderSetup(){
   if(foraDaConta) msg+=' ⚠️ '+foraDaConta;
   document.getElementById('setupSummary').textContent=msg;
 }
-/* O Campão é 36 de linha + 2 a 4 goleiros: 38 a 40 escolhidos, fora os
-   capitães. Fora disso o app avisa e pede confirmação, mas não trava — se
+/* O Campão tem 38 a 40 pessoas contando os 2 capitães, e 2 a 4 goleiros. Fora disso o app avisa e pede confirmação, mas não trava — se
    alguém furar em cima da hora, o draft ainda tem que sair. */
 function contaForaDoCampao(nPool,nGks){
-  const p=[];
-  if(nPool<POOL_MIN||nPool>POOL_MAX) p.push(`São ${nPool} no draft — o combinado é de ${POOL_MIN} a ${POOL_MAX} (36 de linha + 2 a 4 goleiros, sem contar os capitães).`);
+  const p=[], tot=nPool+NT;
+  if(tot<TOTAL_MIN||tot>TOTAL_MAX) p.push(`São ${tot} no total (${NT} capitães + ${nPool} no draft) — o combinado é de ${TOTAL_MIN} a ${TOTAL_MAX} contando os capitães.`);
   if(nGks<GK_MIN||nGks>GK_MAX) p.push(`São ${nGks} goleiro${nGks===1?'':'s'} — o combinado é de ${GK_MIN} a ${GK_MAX}.`);
   return p.join(' ');
 }
